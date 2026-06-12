@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pickpack - Monochrome Reality</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* Translucent Monochrome Glowing Button */
+        .blue-glass-btn {
+            background: rgba(255, 255, 255, 0.08); color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4); padding: 12px 24px; font-size: 16px;
+            font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.3s ease;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(6px);
+        }
+        .blue-glass-btn:hover { background: rgba(255, 255, 255, 0.2); box-shadow: 0 0 25px rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+        .blue-glass-btn:disabled { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+
+        /* Title Opening */
+        #openingScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 300; transition: opacity 1.2s ease-in-out; cursor: pointer;
+        }
+        #gameTitle {
+            font-family: 'Cinzel', serif; font-size: 110px; color: rgba(255, 255, 255, 0.8); 
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.6), 0 0 10px rgba(255, 255, 255, 0.3);
+            letter-spacing: 10px; font-weight: 700; margin-bottom: 50px; text-transform: lowercase;
+        }
+        .start-prompt { font-size: 20px; color: rgba(255, 255, 255, 0.5); letter-spacing: 3px; animation: pulse 2s infinite; font-family: 'Cinzel', serif; }
+        @keyframes pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+        /* Translucent Glass Containers */
+        .screen-container {
+            position: relative; width: 950px; max-width: 95vw; height: 650px; 
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; 
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            display: none; flex-direction: column; overflow: hidden; opacity: 0; transition: opacity 0.8s ease-in;
+        }
+
+        /* Account UI */
+        #authUI { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; align-items: center; z-index: 50; }
+        .small-btn { padding: 8px 12px; font-size: 12px; }
+
+        /* Lobby Screen */
+        #lobbyScreen { align-items: center; justify-content: center; padding: 30px; }
+        .screen-title { font-family: 'Cinzel', serif; font-size: 36px; color: #ffffff; text-shadow: 0 0 15px rgba(255, 255, 255, 0.6); margin-bottom: 20px; letter-spacing: 5px; }
+        .points-display { font-size: 24px; font-weight: bold; color: #ffffff; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.4); }
+        .lobby-info-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px 40px; text-align: center; margin-bottom: 20px; width: 80%; }
+        .lobby-info-panel h2 { font-size: 20px; color: #ffffff; margin-bottom: 10px; text-shadow: 0 0 5px #fff; }
+        .lobby-deck-container { width: 100%; display: flex; justify-content: center; gap: 15px; overflow-x: auto; padding: 15px 0; margin-bottom: 20px; }
+        .lobby-deck-container::-webkit-scrollbar { height: 8px; }
+        .lobby-deck-container::-webkit-scrollbar-track { background: #000; }
+        .lobby-deck-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        .lobby-actions { display: flex; gap: 20px; }
+
+        /* Before-Pick Screen */
+        #beforePickScreen { align-items: center; justify-content: center; padding: 30px; }
+        .gacha-layout { display: flex; width: 100%; height: 100%; gap: 30px; justify-content: space-between; align-items: center; }
+        .gacha-left { width: 40%; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; text-align: center; }
+        .gacha-right { width: 55%; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        .prob-title { font-size: 20px; color: #ffffff; margin-bottom: 15px; font-weight: bold; text-shadow: 0 0 5px #fff; }
+        .prob-table { width: 100%; border-collapse: collapse; }
+        .prob-table th, .prob-table td { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px; font-size: 14px; text-align: center; }
+        
+        /* Monochrome Rarity Glows */
+        .color-L { color: #ffffff; text-shadow: 0 0 12px rgba(255, 255, 255, 1); font-weight: bold;}
+        .color-E { color: #e0e0e0; text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); font-weight: bold;}
+        .color-R { color: #b0b0b0; font-weight: bold; text-shadow: 0 0 4px rgba(255,255,255,0.3);}
+        .color-U { color: #808080; font-weight: bold;}
+        .color-C { color: #505050; }
+
+        /* Story Cutscene Screen */
+        #cutsceneScreen { background: #000000; align-items: center; justify-content: center; transition: background-color 0.1s; }
+        #cutsceneCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .cutscene-text {
+            font-family: 'Cinzel', serif; font-size: 40px; font-weight: bold;
+            color: rgba(255, 255, 255, 0.9); text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            opacity: 0; transition: opacity 1.5s ease; position: absolute; z-index: 10;
+            text-align: center; pointer-events: none; letter-spacing: 2px;
+        }
+
+        /* Battle Screen */
+        #topUI { display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; background: rgba(0, 0, 0, 0.5); border-bottom: 1px solid rgba(255,255,255,0.15); position: relative; }
+        #stageInfo { position: absolute; left: 50%; transform: translateX(-50%); font-size: 16px; color: #ffffff; font-weight: bold; text-shadow: 0 0 10px rgba(255, 255, 255, 0.8); font-family: 'Cinzel', serif; }
+        .entity-info { display: flex; flex-direction: column; width: 35%; }
+        .entity-name { font-size: 14px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; font-family: 'Cinzel', serif; }
+        #playerName { color: #ffffff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); }
+        #bossName { color: #ffffff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.6); text-align: right; }
+        .hp-bar-bg { width: 100%; height: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; position: relative; }
+        .hp-bar-fill { height: 100%; width: 100%; transition: width 0.4s ease-out; }
+        #playerHpFill { background: linear-gradient(90deg, #444444, #ffffff); box-shadow: 0 0 10px #ffffff; }
+        #bossHpFill { background: linear-gradient(90deg, #111111, #aaaaaa); box-shadow: 0 0 10px #ffffff; transform-origin: right; }
+        .hp-text { position: absolute; width: 100%; text-align: center; top: 0px; font-size: 10px; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+        #canvasWrapper { position: relative; width: 100%; height: 350px; }
+        canvas { width: 100%; height: 100%; background: #000000; display: block; }
+        #bottomUI { padding: 15px; background: rgba(0, 0, 0, 0.6); border-top: 1px solid rgba(255,255,255,0.15); display: flex; justify-content: flex-start; gap: 15px; overflow-x: auto; flex-wrap: nowrap; }
+        #bottomUI::-webkit-scrollbar { height: 8px; }
+        #bottomUI::-webkit-scrollbar-track { background: #000; }
+        #bottomUI::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        /* Cards & Overlays */
+        .card { min-width: 140px; height: 190px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; position: relative; flex-shrink: 0; }
+        .card.playable { cursor: pointer; }
+        .card.playable:hover { transform: translateY(-15px) scale(1.05); z-index: 10; box-shadow: 0 0 25px rgba(255,255,255,0.6); background: rgba(255,255,255,0.1); }
+        .card.disabled { opacity: 0.2; pointer-events: none; filter: grayscale(100%); }
+        .card-title { font-size: 13px; font-weight: bold; text-align: center; color: #fff; }
+        .card-desc { font-size: 11px; color: #cccccc; text-align: center; line-height: 1.3; word-break: keep-all; }
+        .card-cost { font-size: 10px; text-align: center; color: #ffffff; background: rgba(255,255,255,0.1); padding: 4px; border-radius: 4px;}
+        .card-rarity { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 4px; }
+
+        .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(10px); z-index: 100; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .overlay h1 { font-size: 48px; margin-bottom: 20px; text-shadow: 0 0 20px #fff; font-family: 'Cinzel', serif; }
+        .win { color: #ffffff; }
+        .lose { color: #666666; }
+
+        #gachaResultGrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; max-width: 850px; max-height: 400px; padding: 15px; overflow-y: auto; }
+        #gachaResultGrid::-webkit-scrollbar { width: 8px; }
+        #gachaResultGrid::-webkit-scrollbar-track { background: #000; }
+        #gachaResultGrid::-webkit-scrollbar-thumb { background: #fff; border-radius: 4px; }
+        #gachaResultGrid .card { min-width: 120px; height: 170px; padding: 8px; }
+
+        #statusMsg { position: absolute; top: 80px; width: 100%; text-align: center; font-size: 18px; font-weight: bold; color: #ffffff; pointer-events: none; text-shadow: 0 0 10px rgba(255,255,255,0.8); transition: opacity 0.3s; opacity: 0; z-index: 50; font-family: 'Cinzel', serif; }
+    
+        /* QTE Mash Overlay Style */
+        .qte-glitch-text { font-size: 54px; font-weight: bold; color: #ffffff; text-shadow: 0 0 20px #fff; animation: qteBlink 0.15s infinite; font-family: 'Cinzel', serif; }
+        @keyframes qteBlink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.98); } }
+    </style>
+</head>
+<body>
+
+    <div id="openingScreen">
+        <div id="gameTitle">pickpack</div>
+        <div class="start-prompt">Click Anywhere to Initialize</div>
+    </div>
+
+    <div id="cutsceneScreen" class="screen-container">
+        <canvas id="cutsceneCanvas" width="950" height="650"></canvas>
+        <div id="cutsceneText" class="cutscene-text"></div>
+    </div>
+
+    <div id="lobbyScreen" class="screen-container">
+        <div id="authUI">
+            <span id="userNameDisplay" style="color: #ffffff; font-size: 14px; display: none;"></span>
+            <button id="loginBtn" class="blue-glass-btn small-btn" onclick="loginWithGoogle()">Google Login</button>
+            <button id="saveBtn" class="blue-glass-btn small-btn" onclick="saveGameData()" style="display: none;">Save Cloud</button>
+            <button id="logoutBtn" class="blue-glass-btn small-btn" onclick="logoutGoogle()" style="display: none;">Logout</button>
+        </div>
+        <h1 class="screen-title">Sanctuary of Concepts</h1>
+        <div class="points-display">Concept Points : <span id="lobbyPoints">0</span> p</div>
+        <div class="lobby-info-panel">
+            <h2>Next Sector : <span id="lobbyStageName" style="color:#ffffff;"></span></h2>
+            <p id="lobbyStageDesc" style="color: #aaaaaa; margin-top: 10px; font-size: 14px;"></p>
+        </div>
+        <div style="font-size: 14px; font-weight: bold; color: #ffffff; margin-bottom: 10px; letter-spacing: 2px;">[ CURRENT DECK ]</div>
+        <div id="lobbyDeck" class="lobby-deck-container"></div>
+        <div class="lobby-actions">
+            <button class="blue-glass-btn" onclick="showGachaRoom()" style="padding: 15px 30px; font-size: 18px;">Before-Pick (Extract)</button>
+            <button class="blue-glass-btn" onclick="tryEnterStage()" style="padding: 15px 30px; font-size: 18px;">Enter Phase</button>
+        </div>
+    </div>
+
+    <div id="beforePickScreen" class="screen-container">
+        <h1 class="screen-title" style="margin-bottom: 10px;">Before-Pick (Extraction)</h1>
+        <div class="points-display">Available : <span id="gachaPoints">0</span> p</div>
+        <div class="gacha-layout">
+            <div class="gacha-left">
+                <div class="prob-title">Manifestation Rates</div>
+                <table class="prob-table">
+                    <tr><td class="color-L">Legendary</td><td class="color-L">1%</td></tr>
+                    <tr><td class="color-E">Epic</td><td class="color-E">5%</td></tr>
+                    <tr><td class="color-R">Rare</td><td class="color-R">14%</td></tr>
+                    <tr><td class="color-U">Uncommon</td><td class="color-U">30%</td></tr>
+                    <tr><td class="color-C">Common</td><td class="color-C">50%</td></tr>
+                </table>
+            </div>
+            <div class="gacha-right">
+                <button class="blue-glass-btn" onclick="rollGacha(1)" style="width: 100%; padding: 20px; font-size: 20px;">Extract x1 (140 p)</button>
+                <button class="blue-glass-btn" onclick="rollGacha(10)" style="width: 100%; padding: 20px; font-size: 20px;">Extract x10 (1400 p)</button>
+                <button class="blue-glass-btn" onclick="returnToLobbyFromGacha()" style="width: 100%; margin-top: 20px;">Return to Sanctuary</button>
+            </div>
+        </div>
+        <div id="gachaResultOverlay" class="overlay">
+            <h1 class="win" style="font-size: 32px; margin-bottom: 10px;">New Concepts Manifested</h1>
+            <div id="gachaResultGrid"></div>
+            <button class="blue-glass-btn" onclick="closeGachaResult()" style="padding: 12px 50px; font-size: 20px;">Dismiss</button>
+        </div>
+    </div>
+
+    <div id="gameContainer" class="screen-container">
+        <div id="topUI">
+            <div class="entity-info">
+                <div class="entity-name" id="playerName">PLAYER</div>
+                <div class="hp-bar-bg"><div id="playerHpFill" class="hp-bar-fill"></div><div id="playerHpText" class="hp-text">150 / 150</div></div>
+            </div>
+            <div id="stageInfo">Phase 01</div>
+            <div class="entity-info" style="align-items: flex-end;">
+                <div class="entity-name" id="bossName">VOID</div>
+                <div class="hp-bar-bg" style="direction: rtl;"><div id="bossHpFill" class="hp-bar-fill"></div><div id="bossHpText" class="hp-text" style="direction: ltr;">200 / 200</div></div>
+            </div>
+        </div>
+        <div id="statusMsg">Select a card to project reality.</div>
+        <div id="canvasWrapper"><canvas id="gameCanvas" width="950" height="350"></canvas></div>
+        <div id="bottomUI"></div>
+        
+        <!-- Battle End Overlay -->
+        <div id="battleOverlay" class="overlay">
+            <h1 id="resultTitle">STAGE CLEAR</h1>
+            <p id="resultDesc" style="margin-bottom: 20px; font-size: 18px; color: #aaaaaa;"></p>
+            <p id="resultReward" style="margin-bottom: 30px; font-size: 22px; color: #ffffff; font-weight:bold; text-shadow:0 0 10px #fff;"></p>
+            <button id="overlayBtn" class="blue-glass-btn" style="padding: 15px 30px; font-size: 18px;"></button>
+        </div>
+
+        <!-- QTE Overriding Overlay -->
+        <div id="qteOverlay" class="overlay" style="background: rgba(0,0,0,0.96);">
+            <h1 class="qte-glitch-text">SYSTEM OVERRIDE</h1>
+            <p style="font-size: 20px; margin-top: 10px; color: #aaa; letter-spacing: 2px;">MASH LEFT CLICK TO EXECUTE COUNTER-INTERRUPTION</p>
+            <div id="qteProgressText" style="font-size: 45px; font-weight: bold; margin-top: 30px; font-family: 'Cinzel', serif; text-shadow: 0 0 15px #fff;">0 / 30</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT_ID.firebaseapp.com", projectId: "YOUR_PROJECT_ID", storageBucket: "YOUR_PROJECT_ID.appspot.com", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID" };
+        let auth, db, currentUser = null;
+
+        try {
+            const app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app);
+            onAuthStateChanged(auth, async (user) => {
+                const loginBtn = document.getElementById('loginBtn'); const logoutBtn = document.getElementById('logoutBtn'); const saveBtn = document.getElementById('saveBtn'); const nameDisplay = document.getElementById('userNameDisplay');
+                if (user) { currentUser = user; nameDisplay.innerText = `${user.displayName} authenticated.`; nameDisplay.style.display = 'inline'; loginBtn.style.display = 'none'; logoutBtn.style.display = 'inline'; saveBtn.style.display = 'inline'; await loadGameData(); } 
+                else { currentUser = null; nameDisplay.style.display = 'none'; loginBtn.style.display = 'inline'; logoutBtn.style.display = 'none'; saveBtn.style.display = 'none'; }
+            });
+        } catch(e) { console.warn("Firebase config bypassed. Running in local state execution mode."); }
+
+        window.loginWithGoogle = () => { if(!auth) return; const provider = new GoogleAuthProvider(); signInWithPopup(auth, provider); };
+        window.logoutGoogle = () => { signOut(auth).then(() => { alert("Logged out safely."); }); };
+        window.saveGameData = async () => { if (!currentUser) return; try { await setDoc(doc(db, "users", currentUser.uid), { gameState: state }); alert("Cloud Synchronization Complete."); } catch (e) { alert("Sync Failure."); } };
+        async function loadGameData() { if (!currentUser) return; try { const docSnap = await getDoc(doc(db, "users", currentUser.uid)); if (docSnap.exists()) { Object.assign(state, docSnap.data().gameState); showLobby(); } } catch (e) {} }
+
+        // English Stages Database
+        const stages = [
+            { name: 'Phase 01 : Threshold of Oblivion', hpRatio: 1.0, atkRatio: 1.0, desc: "A faint whisper of the void echoes through the gateway." },
+            { name: 'Phase 02 : Abyssal Silence', hpRatio: 1.4, atkRatio: 1.3, desc: "A deep, profound darkness looms where light ceases to register." },
+            { name: 'Phase 03 : Fracture of Reality', hpRatio: 12.5, atkRatio: 2.2, desc: "CRITICAL ALERT: Space-time structures are collapsing. Chaotic code pattern detected." },
+            { name: 'Phase 04 : Singularity Center', hpRatio: 2.5, atkRatio: 2.0, desc: "A colossal event horizon consuming all structural properties." },
+            { name: 'Final Phase : Horizon of Non-Existence', hpRatio: 3.5, atkRatio: 2.5, desc: "The ultimate trial separating complete presence from absolute nothingness." }
+        ];
+
+        const R_COLORS = { 'L': '#ffffff', 'E': '#e0e0e0', 'R': '#b0b0b0', 'U': '#808080', 'C': '#505050' };
+        const cardDB = {};
+        function addCard(id, rarity, icon, name, desc, stat, statColor, cost, action) { cardDB[id] = { id, rarity, icon, name, desc, stat, statColor, cost, action }; }
+        
+        // English Card Manifestations Setup
+        addCard('L1', 'L', '👑', 'Absolute Void', 'Erases presence itself completely.', 'DMG 150', '#ffffff', 'ULTIMATE', (b,p)=>b(150)); 
+        addCard('L2', 'L', '✨', 'Genesis Light', 'Re-engineers vital functions.', 'HEAL 100', '#ffffff', 'RESTORATION', (b,p)=>{state.maxPlayerHp+=50; p(-100);}); 
+        addCard('E1', 'E', '🌀', 'Pure Chaos', 'Unstable energy burst.', 'DMG 50~150', '#ffffff', 'UNSTABLE', (b,p)=>b(Math.floor(Math.random()*101)+50)); 
+        addCard('E2', 'E', '🌌', 'Transcendence', 'Permeates structural growth.', 'HEAL 40', '#ffffff', 'EXPANSION', (b,p)=>{state.maxPlayerHp+=40; p(-40);}); 
+        addCard('E3', 'E', '🌠', 'Collapse', 'Proportional structural tear.', '30% Boss HP DMG', '#ffffff', 'FRACTION', (b,p)=>b(Math.floor(state.bossHp*0.3))); 
+        addCard('R1', 'R', '⚡', 'Judgment', 'High risk compensation blow.', 'DMG 70 | Recoil 15', '#ffffff', 'RECOIL', (b,p)=>{b(70); p(15);}); 
+        addCard('R2', 'R', '❄️', 'Stasis', 'Freeze state parameters.', 'DMG 25 | Immune', '#ffffff', 'STASIS', (b,p)=>{b(25); state.playerInvincible=true;}); 
+        addCard('R3', 'R', '☄️', 'Meteor Shift', 'Focused compression assault.', 'DMG 60', '#ffffff', 'STRIKE', (b,p)=>b(60)); 
+        addCard('R4', 'R', '🕳️', 'Siphon Abyss', 'Converts energy on impact.', 'DMG 40 | HEAL 20', '#ffffff', 'SIPHON', (b,p)=>{b(40); p(-20);}); 
+        addCard('R5', 'R', '🌟', 'Divinity Essence', 'Extensive formula parsing.', 'HEAL 60', '#ffffff', 'HEAL', (b,p)=>p(-60)); 
+        addCard('U1', 'U', '🔥', 'Destruction', 'Standard structural fracture.', 'DMG 40', '#ffffff', 'ATTACK', (b,p)=>b(40)); 
+        addCard('U2', 'U', '💧', 'Rejuvenate', 'Restores operating code.', 'HEAL 35', '#ffffff', 'HEAL', (b,p)=>p(-35)); 
+        addCard('U3', 'U', '🌿', 'Decay Link', 'Simultaneous output conversion.', 'DMG 20 | HEAL 20', '#ffffff', 'SIPHON', (b,p)=>{b(20); p(-20);}); 
+        addCard('U4', 'U', '🌪️', 'Gale Force', 'Kinetic projection.', 'DMG 35', '#ffffff', 'ATTACK', (b,p)=>b(35)); 
+        addCard('U5', 'U', '🪨', 'Earthen Shell', 'Balance shield extraction.', 'DMG 15 | HEAL 20', '#ffffff', 'DEFENSE', (b,p)=>{b(15); p(-20);}); 
+        addCard('U6', 'U', '🧊', 'Frost Layer', 'Thermal drop containment.', 'DMG 38', '#ffffff', 'ATTACK', (b,p)=>b(38)); 
+        addCard('U7', 'U', '☀️', 'Solar Pulse', 'Standard data correction.', 'HEAL 40', '#ffffff', 'HEAL', (b,p)=>p(-40)); 
+        addCard('U8', 'U', '🌙', 'Dark Matter', 'Heavy pressure output.', 'DMG 45 | Recoil 5', '#ffffff', 'ATTACK', (b,p)=>{b(45); p(5);}); 
+        addCard('U9', 'U', '🩸', 'Sanguine Pact', 'Critical cell calculation.', 'DMG 50 | Recoil 15', '#ffffff', 'RISK', (b,p)=>{b(50); p(15);}); 
+        addCard('U10', 'U', '👻', 'Anima Drain', 'Spectral frequency conversion.', 'DMG 25 | HEAL 15', '#ffffff', 'SIPHON', (b,p)=>{b(25); p(-15);}); 
+        for(let i=1; i<=10; i++) addCard(`C${i}`, 'C', '🗡️', `Strike Protocol ${i}`, 'Basic execution stream.', `DMG ${15+i}`, '#ffffff', 'BASIC', (b,p)=>b(15+i)); 
+        for(let i=11; i<=15; i++) addCard(`C${i}`, 'C', '🩹', `Patch Sequence ${i-10}`, 'Minor parameter fix.', `HEAL ${15+(i-10)*2}`, '#ffffff', 'BASIC', (b,p)=>p(-(15+(i-10)*2))); 
+        addCard('C16', 'C', '🍂', 'Fallen Leaf', 'Fading particle simulation.', 'DMG 12', '#ffffff', 'BASIC', (b,p)=>b(12)); 
+        addCard('C17', 'C', '💦', 'Dewdrop', 'Trace fluid allocation.', 'HEAL 12', '#ffffff', 'BASIC', (b,p)=>p(-12)); 
+        addCard('C18', 'C', '🕯️', 'Ignition', 'Thermal initialization.', 'DMG 18', '#ffffff', 'BASIC', (b,p)=>b(18)); 
+        addCard('C19', 'C', '🌱', 'Sprout Root', 'Organic logic injection.', 'HEAL 18', '#ffffff', 'BASIC', (b,p)=>p(-18)); 
+        addCard('C20', 'C', '💨', 'Dissolve', 'Atmospheric disruption.', 'DMG 14', '#ffffff', 'BASIC', (b,p)=>b(14));
+
+        let state = { points: 1400, stageIdx: 0, playerHp: 150, maxPlayerHp: 150, bossHp: 200, maxBossHp: 200, isPlayerTurn: true, gameOver: false, time: 0, playerInvincible: false, playerDeck: ['C1', 'C11', 'U1', 'U2'], qteTriggered: false, shakeTimer: 0 };
+        let hasGameStarted = false; let animationId; let cutsceneAnimId;
+        const playerPos = { x: 200, y: 175 }; const bossPos = { x: 750, y: 175 };
+        let particles = []; let floatingTexts = [];
+
+        const screens = { opening: document.getElementById('openingScreen'), lobby: document.getElementById('lobbyScreen'), gacha: document.getElementById('beforePickScreen'), cutscene: document.getElementById('cutsceneScreen'), game: document.getElementById('gameContainer') };
+        const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
+        const cutsceneCanvas = document.getElementById('cutsceneCanvas'); const cctx = cutsceneCanvas.getContext('2d');
+        const statusMsg = document.getElementById('statusMsg');
+
+        function switchScreen(targetScreen) {
+            Object.values(screens).forEach(s => { s.style.opacity = '0'; setTimeout(() => s.style.display = 'none', 500); });
+            setTimeout(() => { targetScreen.style.display = 'flex'; setTimeout(() => targetScreen.style.opacity = '1', 50); }, 500);
+        }
+
+        screens.opening.addEventListener('click', () => { if (hasGameStarted) return; hasGameStarted = true; screens.opening.style.opacity = '0'; setTimeout(() => { screens.opening.style.display = 'none'; showLobby(); }, 1200); });
+
+        function showLobby() {
+            switchScreen(screens.lobby);
+            document.getElementById('lobbyPoints').innerText = state.points; document.getElementById('lobbyStageName').innerText = stages[state.stageIdx].name; document.getElementById('lobbyStageDesc').innerText = stages[state.stageIdx].desc;
+            const deckUI = document.getElementById('lobbyDeck'); deckUI.innerHTML = ''; state.playerDeck.forEach(id => deckUI.innerHTML += getCardHTML(id, false));
+            cancelAnimationFrame(animationId); cancelAnimationFrame(cutsceneAnimId);
+        }
+
+        window.showGachaRoom = () => { switchScreen(screens.gacha); document.getElementById('gachaPoints').innerText = state.points; };
+        window.returnToLobbyFromGacha = () => showLobby();
+        window.rollGacha = (times) => {
+            const cost = times * 140; if (state.points < cost) return alert("Insufficient Concept Points."); state.points -= cost; document.getElementById('gachaPoints').innerText = state.points;
+            const results = [];
+            for(let i=0; i<times; i++) { const r = Math.random() * 100; let rarity = r<1?'L':r<6?'E':r<20?'R':r<50?'U':'C'; const pool = Object.values(cardDB).filter(c => c.rarity === rarity); const drawn = pool[Math.floor(Math.random() * pool.length)]; results.push(drawn.id); state.playerDeck.push(drawn.id); }
+            const grid = document.getElementById('gachaResultGrid'); grid.innerHTML = ''; results.forEach(id => grid.innerHTML += getCardHTML(id, false)); document.getElementById('gachaResultOverlay').style.display = 'flex';
+        };
+        window.closeGachaResult = () => { document.getElementById('gachaResultOverlay').style.display = 'none'; document.getElementById('gachaResultGrid').innerHTML = ''; };
+
+        function getCardHTML(cardId, isPlayable) {
+            const c = cardDB[cardId]; const clickEvent = isPlayable ? `onclick="playCard('${c.id}')"` : ""; const clz = `card ${isPlayable ? 'playable' : ''}`;
+            return `<div class="${clz}" ${clickEvent} style="border-color: rgba(255,255,255,0.4); color: #ffffff; box-shadow: 0 0 10px rgba(255,255,255,0.1);"><div class="card-rarity" style="color:${R_COLORS[c.rarity]}; text-shadow: 0 0 5px ${R_COLORS[c.rarity]};">${c.rarity}</div><div class="card-title">${c.icon} ${c.name}</div><div class="card-desc">${c.desc}<br><br><strong style="color:#fff; text-shadow:0 0 5px #fff;">${c.stat}</strong></div><div class="card-cost">${c.cost}</div></div>`;
+        }
+
+        window.tryEnterStage = () => {
+            if (state.stageIdx === 0) playCutscene1();
+            else if (state.stageIdx === 1) playCutscene2();
+            else window.enterStage(); 
+        };
+
+        function playCutscene1() {
+            switchScreen(screens.cutscene); const ct = document.getElementById('cutsceneText'); 
+            cctx.clearRect(0,0, cutsceneCanvas.width, cutsceneCanvas.height); screens.cutscene.style.backgroundColor = '#000000';
+            ct.innerText = "Seek it... Erase it..."; ct.style.opacity = '0'; 
+            setTimeout(() => { ct.style.opacity = '1'; setTimeout(() => { ct.style.opacity = '0'; setTimeout(window.enterStage, 1500); }, 3000); }, 600);
+        }
+
+        function playCutscene2() {
+            switchScreen(screens.cutscene); const ct = document.getElementById('cutsceneText');
+            screens.cutscene.style.backgroundColor = '#000000'; ct.innerText = "Isolation consumes me..."; ct.style.opacity = '0'; cctx.clearRect(0, 0, cutsceneCanvas.width, cutsceneCanvas.height);
+            let t = 0; let enemyAppeared = false;
+            function anim() {
+                cctx.clearRect(0, 0, cutsceneCanvas.width, cutsceneCanvas.height); t++;
+                const px = cutsceneCanvas.width / 2 + Math.sin(t * 0.02) * 80; const py = cutsceneCanvas.height / 2 + Math.cos(t * 0.015) * 40;
+                drawHexagon(cctx, px, py, '#ffffff', 40, true, t);
+                if (enemyAppeared) { drawHexagon(cctx, px + 150, py - 30, '#ffffff', 55, false, t); }
+                cutsceneAnimId = requestAnimationFrame(anim);
+            }
+            setTimeout(() => {
+                ct.style.opacity = '1'; anim();
+                setTimeout(() => {
+                    enemyAppeared = true; screens.cutscene.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    setTimeout(() => { screens.cutscene.style.backgroundColor = '#000000'; }, 100);
+                    setTimeout(() => { cancelAnimationFrame(cutsceneAnimId); ct.style.opacity = '0'; window.enterStage(); }, 1500);
+                }, 3000); 
+            }, 600);
+        }
+
+        window.enterStage = () => {
+            switchScreen(screens.game); const s = stages[state.stageIdx];
+            
+            // Stage 3 Override Setup
+            if(state.stageIdx === 2) {
+                state.maxBossHp = 2500;
+                state.shakeTimer = 45; // High impact entrance shake
+            } else {
+                state.maxBossHp = Math.floor(200 * s.hpRatio);
+            }
+            
+            state.bossHp = state.maxBossHp; state.isPlayerTurn = true; state.gameOver = false; state.playerInvincible = false; state.qteTriggered = false; particles = []; floatingTexts = [];
+            const bottomUI = document.getElementById('bottomUI'); bottomUI.innerHTML = ''; state.playerDeck.forEach(id => bottomUI.innerHTML += getCardHTML(id, true));
+            document.getElementById('battleOverlay').style.display = 'none'; updateUI(); animate(); showMessage("Validate your concept parameters.");
+        };
+
+        function updateUI() {
+            document.getElementById('playerHpFill').style.width = `${Math.max(0, (state.playerHp / state.maxPlayerHp) * 100)}%`; document.getElementById('playerHpText').innerText = `${state.playerHp} / ${state.maxPlayerHp}`;
+            document.getElementById('bossHpFill').style.width = `${Math.max(0, (state.bossHp / state.maxBossHp) * 100)}%`; document.getElementById('bossHpText').innerText = `${state.bossHp} / ${state.maxBossHp}`;
+            document.getElementById('stageInfo').innerText = stages[state.stageIdx].name;
+        }
+
+        function showMessage(msg) { statusMsg.innerText = msg; statusMsg.style.opacity = 1; setTimeout(() => { if(state.isPlayerTurn && !state.gameOver) statusMsg.style.opacity = 0; }, 2000); }
+        function toggleCards(enable) { document.querySelectorAll('#bottomUI .card').forEach(c => enable ? c.classList.remove('disabled') : c.classList.add('disabled')); }
+        function addFloatingText(x, y, text, color) { floatingTexts.push({ x, y, text, color, life: 60 }); }
+
+        function applyDamage(target, amount) {
+            if (target === 'boss') { 
+                if(amount > 0) { 
+                    state.bossHp = Math.max(0, state.bossHp - amount); addFloatingText(bossPos.x, bossPos.y - 50, `-${amount}`, '#ffffff'); 
+                } else { 
+                    state.bossHp = Math.min(state.maxBossHp, state.bossHp - amount); addFloatingText(bossPos.x, bossPos.y - 50, `+${-amount}`, '#ffffff'); 
+                } 
+            } else { 
+                if(amount > 0) { 
+                    state.playerHp = Math.max(0, state.playerHp - amount); addFloatingText(playerPos.x, playerPos.y - 50, `-${amount}`, '#aaaaaa'); 
+                } else { 
+                    state.playerHp = Math.min(state.maxPlayerHp, state.playerHp - amount); addFloatingText(playerPos.x, playerPos.y - 50, `+${-amount}`, '#ffffff'); 
+                } 
+            } 
+            updateUI();
+            
+            // Check for Stage 3 QTE mid-damage trigger point (HP below 1500)
+            if(state.stageIdx === 2 && state.bossHp <= 1500 && !state.qteTriggered && state.bossHp > 0) {
+                state.qteTriggered = true;
+                triggerMashEvent();
+            }
+        }
+
+        // QTE Quick Time Event System
+        function triggerMashEvent() {
+            let clicks = 0;
+            const qteOverlay = document.getElementById('qteOverlay');
+            const progressText = document.getElementById('qteProgressText');
+            
+            qteOverlay.style.display = 'flex';
+            state.shakeTimer = 100; // Constant screen instability during override
+            
+            const mashHandler = (e) => {
+                clicks++;
+                progressText.innerText = `${clicks} / 30`;
+                createExplosion(canvas.width/2 + (Math.random()-0.5)*200, canvas.height/2 + (Math.random()-0.5)*100, '#ffffff', 5);
+                
+                if(clicks >= 30) {
+                    window.removeEventListener('click', mashHandler);
+                    qteOverlay.style.display = 'none';
+                    
+                    // Boss Speaks English Dialogue & HP halves
+                    alert("VOID ENTITY: \"D... DAMN IT... THIS ANOMALOUS OVERRIDE PATTERN... MY FRAME IS COLLAPSING!!\"");
+                    state.bossHp = Math.floor(state.bossHp / 2);
+                    state.shakeTimer = 40;
+                    updateUI();
+                }
+            };
+            // Adding minor timeout to prevent current frame mouse register click inheritance
+            setTimeout(() => { window.addEventListener('click', mashHandler); }, 50);
+        }
+
+        window.playCard = (cardId) => {
+            if (!hasGameStarted || !state.isPlayerTurn || state.gameOver || document.getElementById('qteOverlay').style.display === 'flex') return; 
+            state.isPlayerTurn = false; toggleCards(false);
+            const c = cardDB[cardId]; showMessage(`[ ${c.name} ] Projected`);
+            if(c.stat.includes('HEAL')) createAura(playerPos.x, playerPos.y, '#ffffff'); else { createExplosion(bossPos.x, bossPos.y, '#ffffff', 60); }
+            setTimeout(() => { c.action((dmg) => applyDamage('boss', dmg), (dmg) => applyDamage('player', dmg)); setTimeout(enemyTurn, 1000); }, 500);
+        };
+
+        function enemyTurn() {
+            if (checkGameOver() || document.getElementById('qteOverlay').style.display === 'flex') return; 
+            showMessage("The void fluctuates violently...");
+            setTimeout(() => {
+                const baseAtk = (Math.floor(Math.random() * 15) + 15) * stages[state.stageIdx].atkRatio;
+                const finalDmg = Math.floor(baseAtk); 
+                createEnemyAttack();
+                setTimeout(() => { 
+                    if (state.playerInvincible) { 
+                        showMessage("BLOCKED!"); addFloatingText(playerPos.x, playerPos.y - 50, "BLOCKED", '#ffffff'); state.playerInvincible = false; 
+                    } else { 
+                        applyDamage('player', finalDmg); 
+                    } 
+                    if (!checkGameOver()) setTimeout(() => { state.isPlayerTurn = true; toggleCards(true); showMessage("Your iteration."); }, 1000); 
+                }, 600); 
+            }, 1000);
+        }
+
+        function checkGameOver() {
+            const overlay = document.getElementById('battleOverlay'); const title = document.getElementById('resultTitle'); const desc = document.getElementById('resultDesc'); const reward = document.getElementById('resultReward'); const btn = document.getElementById('overlayBtn');
+            if (state.bossHp <= 0) { state.gameOver = true; overlay.style.display = 'flex'; const earned = state.maxBossHp; state.points += earned; 
+                if (state.stageIdx < stages.length - 1) { title.innerText = 'STAGE CLEAR'; title.className = 'win'; desc.innerText = 'A layer of void density has been peeled away.'; reward.innerText = `+ ${earned} p Allocated`; btn.innerText = 'Return to Sanctuary'; btn.onclick = () => { state.stageIdx++; returnToLobbyAfterWin(); }; } 
+                else { title.innerText = 'ABSOLUTE VICTORY'; title.className = 'win'; desc.innerText = 'All void components cleared. Reality structure optimized.'; reward.innerText = ""; btn.innerText = 'Re-initialize Test Frame'; btn.onclick = hardReset; } return true;
+            }
+            if (state.playerHp <= 0) { state.gameOver = true; overlay.style.display = 'flex'; title.innerText = 'DEFEAT'; title.className = 'lose'; desc.innerText = 'Your concept parameters scattered back into white noise...'; reward.innerText = ""; btn.innerText = 'Re-initialize Segment'; btn.onclick = hardReset; return true; }
+            return false;
+        }
+
+        function returnToLobbyAfterWin() { state.playerHp = Math.min(state.maxPlayerHp, state.playerHp + Math.floor(state.maxPlayerHp * 0.3)); document.getElementById('battleOverlay').style.display = 'none'; showLobby(); }
+        function hardReset() { state.stageIdx = 0; state.playerHp = 150; state.maxPlayerHp = 150; state.bossHp = 200; state.maxBossHp = 200; state.points = 1400; state.playerDeck = ['C1', 'C11', 'U1', 'U2']; document.getElementById('battleOverlay').style.display = 'none'; showLobby(); }
+
+        class Particle {
+            constructor(x, y, vx, vy, color, size, life, beh = 'normal') { this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.color=color; this.size=size; this.life=life; this.maxLife=life; this.beh=beh; }
+            update() { this.x+=this.vx; this.y+=this.vy; this.life--; if(this.beh==='heal') this.vy-=0.1; else if(this.beh==='thunder') this.vx+=(Math.random()-0.5)*10; }
+            draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life/this.maxLife); ctx.shadowBlur=10; ctx.shadowColor=this.color; ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
+        }
+        function createExplosion(x,y,c,cnt) { for(let i=0;i<cnt;i++){ const a=Math.random()*Math.PI*2, s=Math.random()*8+2; particles.push(new Particle(x,y,Math.cos(a)*s,Math.sin(a)*s,c,Math.random()*5+2,40)); } }
+        function createAura(x,y,c) { for(let i=0;i<40;i++) particles.push(new Particle(x+(Math.random()-0.5)*80, y+50, 0, -Math.random()*5, c, Math.random()*4+3, 60, 'heal')); }
+        
+        // Undertale-inspired complex bullet logic variations for Phase 3
+        function createEnemyAttack() { 
+            let bulletCount = state.stageIdx === 2 ? 45 : 20;
+            let interval = state.stageIdx === 2 ? 15 : 30;
+            
+            for(let i=0; i<bulletCount; i++) { 
+                setTimeout(()=> { 
+                    const dx=playerPos.x-bossPos.x, dy=playerPos.y-bossPos.y;
+                    // Chaotic variance for Phase 3 Undertale Bullet Hell feel
+                    let waveFactor = state.stageIdx === 2 ? Math.sin(i*0.5)*0.5 : 0;
+                    const a=Math.atan2(dy,dx)+(Math.random()-0.5)*0.15 + waveFactor;
+                    const s=state.stageIdx === 2 ? 22 : 18; 
+                    particles.push(new Particle(bossPos.x,bossPos.y,Math.cos(a)*s,Math.sin(a)*s,'#ffffff',state.stageIdx===2?4:6,40)); 
+                }, i * interval); 
+            } 
+            setTimeout(()=>createExplosion(playerPos.x,playerPos.y,'#ffffff',30),600); 
+        }
+
+        function drawHexagon(targetCtx, x, y, c, sz, isP, time, isInvincible = false) {
+            targetCtx.save(); const fY = y + Math.sin(time * 0.05 + (isP ? 0 : Math.PI)) * 10;
+            if (isP && isInvincible) { targetCtx.shadowBlur = 30; targetCtx.shadowColor = '#ffffff'; c = '#ffffff'; } else { targetCtx.shadowBlur = 20; targetCtx.shadowColor = c; }
+            targetCtx.strokeStyle = c; targetCtx.lineWidth = 3; targetCtx.translate(x, fY); if (!isP) targetCtx.rotate(time * 0.02);
+            targetCtx.beginPath();
+            if (isP) { for (let i = 0; i < 6; i++) targetCtx.lineTo(Math.cos(i * Math.PI / 3) * sz, Math.sin(i * Math.PI / 3) * sz); }
+            else { const s = 1 + (state.stageIdx * 0.1); targetCtx.scale(s, s); targetCtx.moveTo(0, -sz); targetCtx.lineTo(sz * 0.8, 0); targetCtx.lineTo(0, sz); targetCtx.lineTo(-sz * 0.8, 0); }
+            targetCtx.closePath(); targetCtx.stroke(); targetCtx.fillStyle = 'rgba(255,255,255,0.06)'; targetCtx.fill(); targetCtx.restore();
+        }
+
+        function animate() {
+            ctx.save();
+            // Handle Camera Shake Matrix Translation
+            if(state.shakeTimer > 0) {
+                let dx = (Math.random() - 0.5) * 8;
+                let dy = (Math.random() - 0.5) * 8;
+                ctx.translate(dx, dy);
+                state.shakeTimer--;
+            }
+            
+            ctx.clearRect(0,0,canvas.width,canvas.height); state.time++;
+            drawHexagon(ctx, playerPos.x, playerPos.y, '#ffffff', 35, true, state.time, state.playerInvincible); 
+            drawHexagon(ctx, bossPos.x, bossPos.y, '#ffffff', 55, false, state.time);
+            for(let i=particles.length-1; i>=0; i--) { particles[i].update(); particles[i].draw(); if(particles[i].life<=0) particles.splice(i,1); }
+            for(let i=floatingTexts.length-1; i>=0; i--) {
+                const ft = floatingTexts[i]; ft.y-=1; ft.life--;
+                ctx.save(); ctx.globalAlpha=ft.life/60; ctx.font="bold 24px 'Courier New'"; ctx.fillStyle=ft.color; ctx.textAlign="center";
+                ctx.shadowBlur=5; ctx.shadowColor=ft.color; ctx.fillText(ft.text, ft.x, ft.y); ctx.restore();
+                if(ft.life<=0) floatingTexts.splice(i,1);
+            }
+            ctx.restore();
+            animationId = requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
