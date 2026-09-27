@@ -16,7 +16,10 @@ const Game = (() => {
 
   /* ---------- boot ---------- */
   function init() {
+    I18N.init(Save.data.settings.lang);
+    I18N.on(onLang);
     $$('[data-icon]').forEach((el) => { el.innerHTML = Icons.svg(el.dataset.icon); el.classList.add('ic-slot'); });
+    updateLangSwitch();
     Sfx.setEnabled(Save.data.settings.sound);
     updateSoundIcons();
     bindGlobal(); bindLobby(); bindArchive(); bindGacha(); bindReward(); bindBattleExtras();
@@ -26,6 +29,8 @@ const Game = (() => {
 
   function bindGlobal() {
     document.addEventListener('click', (e) => {
+      const lang = e.target.closest('[data-lang]');
+      if (lang) { Sfx.play('click'); setLanguage(lang.dataset.lang); return; }
       const go = e.target.closest('[data-go]');
       if (go) { Sfx.play('click'); navigate(go.dataset.go); return; }
       const act = e.target.closest('[data-act]');
@@ -41,26 +46,48 @@ const Game = (() => {
     else if (where === 'gacha') openGacha();
   }
 
+  /* ---------- language ---------- */
+  function setLanguage(l) {
+    Save.data.settings.lang = l; Save.commit(); // an explicit choice always wins over auto-detection
+    if (I18N.setLang(l)) UI.toast(tr('ui.langSwitched'), 'globe', 1400);
+  }
+
+  function updateLangSwitch() {
+    $$('[data-lang]').forEach((b) => { const on = b.dataset.lang === I18N.lang; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  }
+
+  function onLang() {
+    updateLangSwitch(); updateSoundIcons(); titlePrompt();
+    if (UI.isActive('lobby')) renderLobby();
+    else if (UI.isActive('archive')) renderArchive();
+    else if (UI.isActive('gacha')) renderGachaInfo();
+  }
+
   function updatePoints() { $$('.pts').forEach((e) => { e.textContent = pts().toLocaleString('en-US'); }); }
 
   function toggleSound() {
     Save.data.settings.sound = !Save.data.settings.sound;
     Sfx.setEnabled(Save.data.settings.sound); Save.commit();
     updateSoundIcons(); Sfx.play('click');
-    UI.toast(Save.data.settings.sound ? 'Sound on' : 'Sound off', Save.data.settings.sound ? 'soundOn' : 'soundOff', 1200);
+    UI.toast(tr(Save.data.settings.sound ? 'ui.soundOn' : 'ui.soundOff'), Save.data.settings.sound ? 'soundOn' : 'soundOff', 1200);
   }
   function updateSoundIcons() {
-    $$('[data-act="sound"]').forEach((b) => { b.innerHTML = Icons.svg(Save.data.settings.sound ? 'soundOn' : 'soundOff'); b.setAttribute('aria-label', Save.data.settings.sound ? 'Mute sound' : 'Unmute sound'); });
+    $$('[data-act="sound"]').forEach((b) => { b.innerHTML = Icons.svg(Save.data.settings.sound ? 'soundOn' : 'soundOff'); b.setAttribute('aria-label', tr(Save.data.settings.sound ? 'ui.mute' : 'ui.unmute')); });
   }
 
   /* ---------- title ---------- */
+  function titlePrompt() { $('#startPrompt').textContent = tr(Save.hadSave ? 'title.continue' : 'title.begin'); }
+
   function title() {
     UI.show('title');
     const scr = $('#screen-title');
-    $('#startPrompt').textContent = Save.hadSave ? 'Click anywhere to continue' : 'Click anywhere to begin';
+    titlePrompt();
     let started = false;
     const go = async (e) => {
       if (started || (e.type === 'keydown' && !['Enter', ' '].includes(e.key))) return;
+      // the language buttons live on the title screen and must not start the game
+      if (e.type === 'click' && e.target.closest('.lang-switch')) return;
+      if (e.type === 'keydown' && document.activeElement && document.activeElement.closest('.lang-switch')) return;
       started = true;
       scr.removeEventListener('click', go); document.removeEventListener('keydown', go);
       Sfx.unlock(); Sfx.play('whoosh');
@@ -86,13 +113,13 @@ const Game = (() => {
     updatePoints();
     const prog = Save.data.progress; const done = prog >= Chapters.length;
     $('#lStatus').innerHTML = done
-      ? `${Icons.svg('sparkle')}<span>Story complete. Every Phase is open for training.</span>`
-      : `${Icons.svg('portal')}<span>${prog} of ${Chapters.length} Phases broken</span>`;
+      ? `${Icons.svg('sparkle')}<span>${tr('lobby.complete')}</span>`
+      : `${Icons.svg('portal')}<span>${tr('lobby.progress', { n: prog, total: Chapters.length })}</span>`;
     $('#lTrack').innerHTML = Chapters.map((ch, i) => {
       const state = i < prog ? 'cleared' : i === prog ? 'current' : 'locked';
       const ic = state === 'cleared' ? 'check' : state === 'locked' ? 'lock' : Bosses[ch.boss].portrait;
       return `<button class="node ${state} ${i === selected ? 'selected' : ''}" data-ch="${i}" ${state === 'locked' ? 'disabled' : ''}
-        data-tip="${Cards.esc(`${ch.code}: ${state === 'locked' ? 'Sealed. Break the previous Phase first.' : ch.name}`)}">
+        data-tip="${Cards.esc(`${loc(ch.code)}: ${state === 'locked' ? tr('lobby.sealed') : loc(ch.name)}`)}">
         <span class="n-hex">${Icons.svg(ic)}</span><span class="n-label">${String(i + 1).padStart(2, '0')}</span></button>`;
     }).join('');
 
@@ -101,26 +128,26 @@ const Game = (() => {
     const reward = first ? ch.reward : Math.round(ch.reward / 20) * 10;
     $('#lChapter').innerHTML = `
       <div class="cc-head">
-        <div class="cc-boss" data-tip="${Cards.esc(`${boss.name}: ${boss.passives.map((p) => Keywords[p].desc).join(' ') || 'Master of every Phase.'}`)}">${Icons.svg(boss.portrait)}</div>
-        <div class="cc-titles"><small>${ch.code}</small><h2>${Cards.esc(ch.name)}</h2><p>${Cards.esc(ch.desc)}</p></div>
-        <div class="cc-reward"><small>${first ? 'First clear' : 'Training'}</small><b>${Icons.svg('gem')}${reward}</b><em>${boss.name}</em></div>
+        <div class="cc-boss" data-tip="${Cards.esc(`${loc(boss.name)}: ${boss.passives.map((p) => Cards.kwDesc(p)).join(' ') || tr('lobby.voidTip')}`)}">${Icons.svg(boss.portrait)}</div>
+        <div class="cc-titles"><small>${Cards.esc(loc(ch.code))}</small><h2>${Cards.esc(loc(ch.name))}</h2><p>${Cards.esc(loc(ch.desc))}</p></div>
+        <div class="cc-reward"><small>${tr(first ? 'lobby.firstClear' : 'lobby.training')}</small><b>${Icons.svg('gem')}${reward}</b><em>${Cards.esc(loc(boss.name))}</em></div>
       </div>
-      <div class="cc-hint"><span class="cc-lumen">${Icons.svg('p_lumen')}</span><p><em>Lumen</em>${Cards.esc(done && !first ? Story.postgame : ch.hint)}</p></div>`;
+      <div class="cc-hint"><span class="cc-lumen">${Icons.svg('p_lumen')}</span><p><em>${Cards.esc(loc(Speakers.lumen.name))}</em>${Cards.esc(loc(done && !first ? Story.postgame : ch.hint))}</p></div>`;
 
     const list = Save.deckList();
     const size = list.length;
     const ok = size >= Save.DECK_MIN;
-    $('#lDeckHead').innerHTML = `${Icons.svg('cards')}<span>Deck <b>${size}</b> cards</span>${ok ? '' : `<em class="warn">Needs ${Save.DECK_MIN}+</em>`}`;
+    $('#lDeckHead').innerHTML = `${Icons.svg('cards')}<span>${tr('lobby.deck', { n: size })}</span>${ok ? '' : `<em class="warn">${tr('lobby.needs', { n: Save.DECK_MIN })}</em>`}`;
     const groups = {};
     list.forEach((c) => { groups[c.id] = groups[c.id] || { id: c.id, lv: c.lv, n: 0 }; groups[c.id].n++; });
     $('#lDeck').innerHTML = Object.values(groups).map((g) => {
       const c = Cards.get(g.id);
-      return `<span class="mini r-${c.rarity}" data-tip="${Cards.esc(`${c.name}${g.lv ? ' ' + '+'.repeat(g.lv) : ''}: ${plain(Cards.textHTML(g.id, g.lv))}`)}">
+      return `<span class="mini r-${c.rarity}" data-tip="${Cards.esc(`${Cards.name(g.id)}${g.lv ? ' ' + '+'.repeat(g.lv) : ''}: ${plain(Cards.textHTML(g.id, g.lv))}`)}">
         <i class="mini-cost">${Cards.costOf(g.id, g.lv)}</i>${Icons.svg(c.icon)}${g.n > 1 ? `<b>x${g.n}</b>` : ''}</span>`;
     }).join('');
     const attention = Object.keys(Save.data.collection).some((id) => Save.entry(id).isNew) || Save.enhanceable().length > 0;
     $('#lArchiveDot').classList.toggle('on', attention);
-    $('#lEnter span').textContent = first ? 'Enter Phase' : 'Train Here';
+    $('#lEnter span').textContent = tr(first ? 'lobby.enter' : 'lobby.train');
   }
 
   function bindLobby() {
@@ -137,7 +164,7 @@ const Game = (() => {
     if (flowLock) return;
     if (Save.deckSize() < Save.DECK_MIN) {
       Sfx.play('error');
-      const go = await UI.confirm('Deck too small', `Your deck needs at least ${Save.DECK_MIN} cards to enter a Phase (it has ${Save.deckSize()}). Open the Archive to add more?`, 'Open Archive');
+      const go = await UI.confirm(tr('lobby.deckSmallTitle'), tr('lobby.deckSmallText', { min: Save.DECK_MIN, n: Save.deckSize() }), tr('lobby.openArchiveBtn'));
       if (go) openArchive();
       return;
     }
@@ -159,12 +186,12 @@ const Game = (() => {
     const e = Save.entry(id); const inDeck = Save.inDeck(id);
     const maxed = e.lv >= Cards.MAX_LV;
     const need = maxed ? 0 : Cards.UPGRADE_COST[e.lv];
-    const next = maxed ? '' : `Next level: ${plain(Cards.textHTML(id, e.lv + 1))}`;
+    const next = maxed ? '' : tr('ar.next', { text: plain(Cards.textHTML(id, e.lv + 1)) });
     return `<div class="tile ${inDeck ? 'in' : ''}" data-id="${id}">
-      ${Cards.html(id, e.lv, { inDeck, badge: e.isNew ? 'NEW' : '', cls: 'pickable' })}
+      ${Cards.html(id, e.lv, { inDeck, badge: e.isNew ? tr('badge.new') : '', cls: 'pickable' })}
       <div class="tile-meta">
-        <span class="echo ${maxed ? 'max' : ''}" data-tip="${Cards.esc(maxed ? 'Echoes: this concept is fully enhanced. Further duplicates return Concept Points.' : `Echoes: ${e.echo} of ${need} needed to Enhance. ${next}`)}">${Icons.svg('shard')}${maxed ? 'MAX' : `${e.echo}/${need}`}</span>
-        ${Save.canEnhance(id) ? `<button class="btn tiny glow" data-enh="${id}" data-tip="${Cards.esc(`Enhance: ${next}`)}">${Icons.svg('levelUp')}<span>Enhance</span></button>` : `<span class="lv">${['Base', 'Lv +', 'Lv ++'][e.lv]}</span>`}
+        <span class="echo ${maxed ? 'max' : ''}" data-tip="${Cards.esc(maxed ? tr('ar.echoMax') : tr('ar.echoTip', { e: e.echo, need, next }))}">${Icons.svg('shard')}${maxed ? tr('ar.max') : `${e.echo}/${need}`}</span>
+        ${Save.canEnhance(id) ? `<button class="btn tiny glow" data-enh="${id}" data-tip="${Cards.esc(tr('ar.enhanceTip', { text: plain(Cards.textHTML(id, e.lv + 1)) }))}">${Icons.svg('levelUp')}<span>${tr('ar.enhance')}</span></button>` : `<span class="lv">${tr(`ar.lv${e.lv}`)}</span>`}
       </div></div>`;
   }
 
@@ -173,9 +200,9 @@ const Game = (() => {
     return `<div class="tile basic ${n ? 'in' : ''}" data-basic="${id}">
       ${Cards.html(id, 0, { badge: `x${n}`, badgeCls: 'count' })}
       <div class="tile-meta counter">
-        <button class="icon-btn tiny" data-dec="${id}" ${n <= 0 ? 'disabled' : ''} aria-label="Remove one">${Icons.svg('minus')}</button>
+        <button class="icon-btn tiny" data-dec="${id}" ${n <= 0 ? 'disabled' : ''} aria-label="${tr('ar.removeOne')}">${Icons.svg('minus')}</button>
         <b>${n}</b>
-        <button class="icon-btn tiny" data-inc="${id}" ${n >= Save.BASIC_MAX ? 'disabled' : ''} aria-label="Add one">${Icons.svg('plus')}</button>
+        <button class="icon-btn tiny" data-inc="${id}" ${n >= Save.BASIC_MAX ? 'disabled' : ''} aria-label="${tr('ar.addOne')}">${Icons.svg('plus')}</button>
       </div></div>`;
   }
 
@@ -183,7 +210,7 @@ const Game = (() => {
     updatePoints();
     const f = archiveFilter;
     const rank = (id) => Rarity[Cards.get(id).rarity].rank;
-    const ids = Cards.all().slice().sort((a, b) => (Save.owned(b) - Save.owned(a)) || (rank(b) - rank(a)) || Cards.get(a).name.localeCompare(Cards.get(b).name));
+    const ids = Cards.all().slice().sort((a, b) => (Save.owned(b) - Save.owned(a)) || (rank(b) - rank(a)) || Cards.name(a).localeCompare(Cards.name(b), I18N.lang));
     const match = (id) => {
       const c = Cards.get(id);
       if (f === 'deck') return Save.inDeck(id);
@@ -196,15 +223,15 @@ const Game = (() => {
       if (f === 'all' || f === c.type || (f === 'deck' && Save.data.deck[b] > 0)) html += basicHTML(b);
     }
     html += ids.filter(match).map(tileHTML).join('');
-    $('#arGrid').innerHTML = html || '<p class="empty-note">Nothing here yet.</p>';
+    $('#arGrid').innerHTML = html || `<p class="empty-note">${tr('ui.nothing')}</p>`;
     const ownedN = Object.keys(Save.data.collection).length;
     const size = Save.deckSize();
-    $('#arDeckCount').innerHTML = `${Icons.svg('cards')}Deck <b class="${size < Save.DECK_MIN ? 'warn' : ''}">${size}</b><small>min ${Save.DECK_MIN}</small>`;
-    $('#arCollect').innerHTML = `${Icons.svg('pack')}Collected <b>${ownedN}</b><small>/ ${Cards.all().length}</small>`;
+    $('#arDeckCount').innerHTML = Icons.svg('cards') + tr('ar.deckCount', { cls: size < Save.DECK_MIN ? 'warn' : '', n: size, min: Save.DECK_MIN });
+    $('#arCollect').innerHTML = Icons.svg('pack') + tr('ar.collected', { n: ownedN, total: Cards.all().length });
     const en = Save.enhanceable().length;
     const btn = $('#arEnhanceAll');
     btn.disabled = en === 0;
-    btn.querySelector('span').textContent = en ? `Enhance all (${en})` : 'Enhance all';
+    btn.querySelector('span').textContent = en ? tr('ar.enhanceAllN', { n: en }) : tr('ar.enhanceAll');
     $$('#arTabs button').forEach((b) => b.classList.toggle('on', b.dataset.f === f));
   }
 
@@ -225,7 +252,7 @@ const Game = (() => {
       }
       const tile = e.target.closest('.tile[data-id]'); if (!tile) return;
       const id = tile.dataset.id;
-      if (!Save.owned(id)) { Sfx.play('error'); UI.toast('Not extracted yet. Find it in the Before-Pick.', 'lock'); return; }
+      if (!Save.owned(id)) { Sfx.play('error'); UI.toast(tr('ar.notOwned'), 'lock'); return; }
       Save.toggleDeck(id); Save.clearNew(id); Save.commit();
       Sfx.play(Save.inDeck(id) ? 'card' : 'click');
       renderArchive();
@@ -235,7 +262,7 @@ const Game = (() => {
       while (Save.enhanceable().length && guard++ < 200) { Save.enhance(Save.enhanceable()[0]); n++; }
       if (!n) return;
       Save.commit(); Sfx.play('upgrade'); renderArchive();
-      UI.toast(`${n} enhancement${n > 1 ? 's' : ''} applied.`, 'levelUp');
+      UI.toast(n > 1 ? tr('ar.enhancedN', { n }) : tr('ar.enhancedOne'), 'levelUp');
     });
   }
 
@@ -243,7 +270,7 @@ const Game = (() => {
     if (!Save.enhance(id)) return;
     Save.clearNew(id); Save.commit(); Sfx.play('upgrade'); renderArchive();
     const tile = $(`#arGrid .tile[data-id="${id}"]`); if (tile) tile.classList.add('enhanced');
-    UI.toast(`${Cards.get(id).name} enhanced to ${'+'.repeat(Save.level(id))}`, 'levelUp');
+    UI.toast(tr('ar.enhanced', { name: Cards.name(id), lv: '+'.repeat(Save.level(id)) }), 'levelUp');
   }
 
   /* ---------- before-pick (gacha) ---------- */
@@ -257,7 +284,7 @@ const Game = (() => {
   function renderGachaInfo() {
     updatePoints();
     const owned = Object.keys(Save.data.collection).length;
-    $('#gOwned').innerHTML = `${Icons.svg('pack')}<span>Collected <b>${owned}</b> / ${Cards.all().length} concepts</span>`;
+    $('#gOwned').innerHTML = `${Icons.svg('pack')}<span>${tr('g.collected', { n: owned, total: Cards.all().length })}</span>`;
     $('#gOne').classList.toggle('poor', pts() < PULL_COST);
     $('#gTen').classList.toggle('poor', pts() < PULL_COST * 10);
   }
@@ -278,7 +305,7 @@ const Game = (() => {
     const cost = PULL_COST * times;
     if (pts() < cost) {
       Sfx.play('error');
-      UI.toast(`Not enough Concept Points. ${cost} p needed, you have ${pts()} p.`, 'gem', 2800);
+      UI.toast(tr('g.poor', { cost, pts: pts() }), 'gem', 2800);
       const b = times === 1 ? $('#gOne') : $('#gTen');
       b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
       return;
@@ -304,9 +331,9 @@ const Game = (() => {
   }
 
   function badgeFor(out) {
-    if (out.kind === 'new') return { badge: 'NEW', cls: 'new' };
-    if (out.kind === 'refund') return { badge: `+${out.refund} p`, cls: 'refund' };
-    return { badge: out.ready ? 'ENHANCE READY' : 'ECHO +1', cls: out.ready ? 'ready' : 'echo' };
+    if (out.kind === 'new') return { badge: tr('badge.new'), cls: 'new' };
+    if (out.kind === 'refund') return { badge: tr('badge.refund', { n: out.refund }), cls: 'refund' };
+    return { badge: tr(out.ready ? 'badge.ready' : 'badge.echo'), cls: out.ready ? 'ready' : 'echo' };
   }
 
   function showResults(results) {
@@ -377,18 +404,18 @@ const Game = (() => {
     Save.commit();
     lastResult = r;
     const choices = rollChoices(ch.odds, 3);
-    $('#rCode').textContent = ch.code;
-    $('#rTitle').textContent = first ? 'Phase Broken' : 'Training Complete';
+    $('#rCode').textContent = loc(ch.code);
+    $('#rTitle').textContent = tr(first ? 'r.broken' : 'r.training');
     $('#rStats').innerHTML = [
-      ['hourglass', `${r.turns} turns`], ['swords', `${r.stats.dealt} damage dealt`], ['heart', `${r.stats.taken} damage taken`], ['cards', `${r.stats.cards} cards played`]
+      ['hourglass', tr('r.turns', { n: r.turns })], ['swords', tr('r.dealt', { n: r.stats.dealt })], ['heart', tr('r.taken', { n: r.stats.taken })], ['cards', tr('r.cards', { n: r.stats.cards })]
     ].map(([i, t]) => `<span>${Icons.svg(i)}${t}</span>`).join('');
-    $('#rPoints').innerHTML = `${Icons.svg('gem')}<b>+${gain}</b><span>Concept Points</span>`;
+    $('#rPoints').innerHTML = `${Icons.svg('gem')}<b>+${gain}</b><span>${tr('r.points')}</span>`;
     $('#rChoices').innerHTML = choices.map((id) => {
       const owned = Save.owned(id);
-      return `<button class="r-pick" data-id="${id}" aria-label="${Cards.esc(Cards.get(id).name)}">${Cards.html(id, Save.level(id), { badge: owned ? 'ECHO +1' : 'NEW', badgeCls: owned ? 'echo' : 'new' })}</button>`;
+      return `<button class="r-pick" data-id="${id}" aria-label="${Cards.esc(Cards.name(id))}">${Cards.html(id, Save.level(id), { badge: tr(owned ? 'badge.echo' : 'badge.new'), badgeCls: owned ? 'echo' : 'new' })}</button>`;
     }).join('');
     $('#rTake').disabled = true;
-    $('#rSkip').querySelector('span').textContent = `Skip (+${SKIP_BONUS} p)`;
+    $('#rSkip').querySelector('span').textContent = tr('r.skip', { n: SKIP_BONUS });
     UI.show('reward');
   }
 
@@ -411,10 +438,11 @@ const Game = (() => {
     const r = lastResult; lastResult = null;
     try {
       if (id) {
-        const out = Save.addCard(id); const name = Cards.get(id).name;
+        const out = Save.addCard(id); const name = Cards.name(id);
         Sfx.play('upgrade');
-        UI.toast(out.kind === 'new' ? `${name} joined your deck.` : out.kind === 'refund' ? `${name} is maxed: +${out.refund} p` : `${name}: Echo +1${out.ready ? ', ready to Enhance' : ''}`, out.kind === 'new' ? 'sparkle' : 'shard');
-      } else { Save.data.points += SKIP_BONUS; UI.toast(`+${SKIP_BONUS} Concept Points`, 'gem'); Sfx.play('click'); }
+        const msg = out.kind === 'new' ? tr('r.newCard', { name }) : out.kind === 'refund' ? tr('r.maxed', { name, n: out.refund }) : tr(out.ready ? 'r.echoReady' : 'r.echo', { name });
+        UI.toast(msg, out.kind === 'new' ? 'sparkle' : 'shard');
+      } else { Save.data.points += SKIP_BONUS; UI.toast(tr('r.skipToast', { n: SKIP_BONUS }), 'gem'); Sfx.play('click'); }
       Save.commit();
       const ch = Chapters[r.chapterIdx];
       if (!r.replay && ch.outro.length) await UI.scene({ backdrop: ch.backdrop, boss: ch.boss, bossVisible: true, lines: ch.outro });
@@ -432,12 +460,12 @@ const Game = (() => {
     Save.data.points += gain; Save.data.stats.losses += 1; Save.commit();
     const res = $('#bResult');
     res.innerHTML = `<div class="res-card">
-      <small>${ch.code}</small><h2>The Phase Holds</h2>
-      <div class="res-lumen"><span>${Icons.svg('p_lumen')}</span><p><em>Lumen</em>${Cards.esc(pickOne(Story.defeat))}</p></div>
-      <div class="res-points">${Icons.svg('gem')}<b>+${gain}</b><span>fragments recovered. Extract, rebuild, return.</span></div>
+      <small>${Cards.esc(loc(ch.code))}</small><h2>${tr('d.title')}</h2>
+      <div class="res-lumen"><span>${Icons.svg('p_lumen')}</span><p><em>${Cards.esc(loc(Speakers.lumen.name))}</em>${Cards.esc(loc(pickOne(Story.defeat)))}</p></div>
+      <div class="res-points">${Icons.svg('gem')}<b>+${gain}</b><span>${tr('d.recovered')}</span></div>
       <div class="res-actions">
-        <button class="btn ghost" data-r="lobby">${Icons.svg('arrowLeft')}<span>Sanctuary</span></button>
-        <button class="btn primary" data-r="retry">${Icons.svg('restart')}<span>Retry Phase</span></button>
+        <button class="btn ghost" data-r="lobby">${Icons.svg('arrowLeft')}<span>${tr('d.sanctuary')}</span></button>
+        <button class="btn primary" data-r="retry">${Icons.svg('restart')}<span>${tr('d.retry')}</span></button>
       </div></div>`;
     res.classList.add('show');
     res.dataset.ch = r.chapterIdx;
@@ -458,17 +486,17 @@ const Game = (() => {
       const B = Battle.state; if (!B || B.over) return;
       Sfx.play('click');
       const v = await UI.modal({
-        title: 'Paused', dismissValue: 'resume',
-        body: `<p class="m-note">${Icons.svg('info')} Play cards with a click or keys 1-9. End your turn with E. Hover keywords and icons for details.</p>`,
+        title: tr('p.title'), dismissValue: 'resume',
+        body: `<p class="m-note">${Icons.svg('info')} ${tr('p.note')}</p>`,
         actions: [
-          { label: 'Retreat', value: 'retreat', cls: 'ghost danger', icon: 'arrowLeft' },
-          { label: Save.data.settings.sound ? 'Mute' : 'Unmute', value: 'sound', cls: 'ghost', icon: Save.data.settings.sound ? 'soundOff' : 'soundOn' },
-          { label: 'Resume', value: 'resume', cls: 'primary', icon: 'play' }
+          { label: tr('p.retreat'), value: 'retreat', cls: 'ghost danger', icon: 'arrowLeft' },
+          { label: tr(Save.data.settings.sound ? 'p.mute' : 'p.unmute'), value: 'sound', cls: 'ghost', icon: Save.data.settings.sound ? 'soundOff' : 'soundOn' },
+          { label: tr('p.resume'), value: 'resume', cls: 'primary', icon: 'play' }
         ]
       });
       if (v === 'sound') toggleSound();
       if (v === 'retreat') {
-        const ok = await UI.confirm('Retreat?', 'You will leave this battle without any reward. Your deck and collection are kept.', 'Retreat', true);
+        const ok = await UI.confirm(tr('p.retreatTitle'), tr('p.retreatText'), tr('p.retreat'), true);
         if (ok) { Battle.retreat(); lobby(); }
       }
     });
@@ -478,42 +506,46 @@ const Game = (() => {
   async function settings() {
     Sfx.play('click');
     const s = Save.data.stats;
-    const cloud = !Cloud.configured ? 'Progress is saved automatically in this browser.'
-      : !Cloud.available ? 'Progress is saved automatically in this browser. Cloud save could not be reached right now.'
-      : Cloud.user ? `Signed in as <b>${Cards.esc(Cloud.user.displayName || 'Picker')}</b>. Your progress also syncs to the cloud.`
-      : 'Progress is saved in this browser. Sign in with Google to back it up to the cloud.';
-    const actions = [];
-    if (Cloud.available && !Cloud.user) actions.push({ label: 'Google Login', value: 'login', cls: 'ghost', icon: 'user' });
-    if (Cloud.available && Cloud.user) actions.push({ label: 'Save Cloud', value: 'push', cls: 'ghost', icon: 'cloud' }, { label: 'Logout', value: 'logout', cls: 'ghost', icon: 'logout' });
+    const cloud = !Cloud.configured ? tr('set.local')
+      : !Cloud.available ? tr('set.cloudDown')
+      : Cloud.user ? tr('set.signedIn', { name: Cards.esc(Cloud.user.displayName || loc(Speakers.picker.name)) })
+      : tr('set.signInHint');
+    const other = I18N.lang === 'ko' ? 'en' : 'ko';
+    const actions = [{ label: other === 'ko' ? '한국어' : 'English', value: 'lang', cls: 'ghost', icon: 'globe' }];
+    if (Cloud.available && !Cloud.user) actions.push({ label: tr('set.login'), value: 'login', cls: 'ghost', icon: 'user' });
+    if (Cloud.available && Cloud.user) actions.push({ label: tr('set.push'), value: 'push', cls: 'ghost', icon: 'cloud' }, { label: tr('set.logout'), value: 'logout', cls: 'ghost', icon: 'logout' });
     actions.push(
-      { label: 'Replay Prologue', value: 'prologue', cls: 'ghost', icon: 'play' },
-      { label: 'Reset Progress', value: 'reset', cls: 'ghost danger', icon: 'restart' },
-      { label: 'Close', value: null, cls: 'primary', icon: 'check' }
+      { label: tr('set.prologue'), value: 'prologue', cls: 'ghost', icon: 'play' },
+      { label: tr('set.reset'), value: 'reset', cls: 'ghost danger', icon: 'restart' },
+      { label: tr('ui.close'), value: null, cls: 'primary', icon: 'check' }
     );
     const v = await UI.modal({
-      title: 'Settings', wide: true,
+      title: tr('set.title'), wide: true,
       body: `<div class="set-grid">
-        <div><h4>${Icons.svg('cloud')}Save</h4><p>${cloud}</p></div>
-        <div><h4>${Icons.svg('swords')}Record</h4><p>${s.wins} victories · ${s.losses} defeats · ${s.pulls} extractions</p></div>
-        <div><h4>${Icons.svg('info')}Controls</h4><p>Click or 1-9 to play a card · E to end the turn · Space or Enter to advance dialogue · Esc to skip a scene</p></div>
+        <div><h4>${Icons.svg('globe')}${tr('set.language')}</h4><p>${tr('set.languageText')}</p></div>
+        <div><h4>${Icons.svg('cloud')}${tr('set.save')}</h4><p>${cloud}</p></div>
+        <div><h4>${Icons.svg('swords')}${tr('set.record')}</h4><p>${tr('set.recordText', { w: s.wins, l: s.losses, p: s.pulls })}</p></div>
+        <div><h4>${Icons.svg('info')}${tr('set.controls')}</h4><p>${tr('set.controlsText')}</p></div>
       </div>`,
       actions
     });
+    if (v === 'lang') { setLanguage(other); settings(); return; } // reopen so the panel shows the new language
     if (v === 'login') Cloud.login();
     if (v === 'push') Cloud.push();
     if (v === 'logout') Cloud.logout();
     if (v === 'prologue') { await UI.scene(Story.prologue); lobby(); }
     if (v === 'reset') {
-      const ok = await UI.confirm('Reset all progress?', 'Your deck, collection, points and story progress will be erased. This cannot be undone.', 'Erase everything', true);
-      if (ok) { Save.reset(); Sfx.setEnabled(Save.data.settings.sound); updateSoundIcons(); UI.toast('Progress reset. A new journey begins.', 'restart'); await UI.scene(Story.prologue); Save.data.seenPrologue = true; Save.commit(); lobby(); }
+      const ok = await UI.confirm(tr('set.resetTitle'), tr('set.resetText'), tr('set.resetOk'), true);
+      if (ok) { Save.reset(); Sfx.setEnabled(Save.data.settings.sound); updateSoundIcons(); UI.toast(tr('set.resetDone'), 'restart'); await UI.scene(Story.prologue); Save.data.seenPrologue = true; Save.commit(); lobby(); }
     }
   }
 
   function onCloud(ev, detail) {
-    if (ev === 'auth' && detail) UI.toast(`Signed in as ${detail.displayName || 'Picker'}.`, 'user');
+    if (ev === 'auth' && detail) UI.toast(tr('cloud.signedIn', { name: detail.displayName || loc(Speakers.picker.name) }), 'user');
     if (ev === 'loaded') {
-      UI.toast('Cloud save loaded.', 'cloud');
+      UI.toast(tr('cloud.loaded'), 'cloud');
       Sfx.setEnabled(Save.data.settings.sound); updateSoundIcons();
+      if (Save.data.settings.lang) I18N.setLang(Save.data.settings.lang);
       if (UI.isActive('lobby')) renderLobby();
       else if (UI.isActive('archive')) renderArchive();
       else if (UI.isActive('gacha')) renderGachaInfo();

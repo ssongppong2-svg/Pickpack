@@ -9,6 +9,6 @@
   } catch (e) {
     console.error(e);
     const p = document.getElementById('startPrompt');
-    if (p) p.textContent = 'Something went wrong while loading. Please refresh the page.';
+    if (p) p.textContent = typeof tr === 'function' ? tr('boot.error') : 'Something went wrong while loading. Please refresh the page.';
   }
 })();

@@ -31,34 +31,34 @@ const BattleView = (() => {
     shieldBadge(el.pShield, p.shield); shieldBadge(el.fShield, f.shield);
     el.pStatus.innerHTML = chips(p.st, []);
     el.fStatus.innerHTML = chips(f.st, B.foe.passives);
-    el.turn.textContent = `Turn ${B.turn}`;
+    el.turn.textContent = tr('b.turnN', { n: B.turn });
     FX.setHero({ shield: p.shield > 0, stasis: (p.st.stasis || 0) > 0 });
   }
 
   function shieldBadge(node, n) {
     node.classList.toggle('on', n > 0);
     node.innerHTML = n > 0 ? `${Icons.svg('shield')}<b>${n}</b>` : '';
-    node.setAttribute('data-tip', `Shield: blocks the next ${n} damage.`);
+    node.setAttribute('data-tip', tr('tip.shield', { n }));
   }
 
   function chips(st, passives) {
     let h = '';
     for (const k of passives) {
       const kw = Keywords[k]; if (!kw) continue;
-      h += `<span class="st-chip passive" data-tip="${Cards.esc(`${kw.name} (passive): ${kw.desc}`)}">${Icons.svg(kw.icon)}</span>`;
+      h += `<span class="st-chip passive" data-tip="${Cards.esc(tr('tip.passive', { name: Cards.kwName(k), desc: Cards.kwDesc(k) }))}">${Icons.svg(kw.icon)}</span>`;
     }
     for (const k of Object.keys(st)) {
       const n = st[k]; const kw = Keywords[k];
       if (!n || !kw || !kw.icon) continue;
-      h += `<span class="st-chip ${kw.debuff ? 'debuff' : ''}" data-tip="${Cards.esc(`${kw.name}: ${kw.desc}`)}">${Icons.svg(kw.icon)}<b>${n}</b></span>`;
+      h += `<span class="st-chip ${kw.debuff ? 'debuff' : ''}" data-tip="${Cards.esc(Cards.kwTip(k))}">${Icons.svg(kw.icon)}<b>${n}</b></span>`;
     }
     return h;
   }
 
   function stage(chapter, boss) {
-    el.code.textContent = chapter.code;
-    el.name.textContent = chapter.name;
-    el.fName.textContent = boss.name.toUpperCase();
+    el.code.textContent = loc(chapter.code);
+    el.name.textContent = loc(chapter.name);
+    el.fName.textContent = loc(boss.name).toUpperCase();
   }
 
   function energy(B) {
@@ -87,7 +87,7 @@ const BattleView = (() => {
       h += Cards.html(c.id, c.lv, {
         uid: c.uid, cost: def.cost === null ? null : cost, costCls, sealed: c.sealed,
         cls: `in-hand ${playable ? 'playable' : 'unplayable'} ${c.fresh ? 'drawn' : ''}`,
-        attrs: `style="--rot:${rot.toFixed(2)}deg;--lift:${lift.toFixed(1)}px;--d:${c.fresh ? (c.freshIdx || 0) * 60 : 0}ms" tabindex="${playable ? 0 : -1}" role="button" aria-label="${Cards.esc(def.name)}"`,
+        attrs: `style="--rot:${rot.toFixed(2)}deg;--lift:${lift.toFixed(1)}px;--d:${c.fresh ? (c.freshIdx || 0) * 60 : 0}ms" tabindex="${playable ? 0 : -1}" role="button" aria-label="${Cards.esc(Cards.name(c.id))}"`,
         dmg: (x) => Battle.previewDamage(x)
       });
     });
@@ -115,7 +115,7 @@ const BattleView = (() => {
     if (B.over || !B.foe.move) { el.intent.classList.remove('show'); return; }
     const move = B.foe.move;
     if (B.foe.st.stun) {
-      el.intent.innerHTML = `<div class="it-row"><span class="it-chip">${Icons.svg('stun')}</span></div><div class="it-name">Stunned</div>`;
+      el.intent.innerHTML = `<div class="it-row"><span class="it-chip">${Icons.svg('stun')}</span></div><div class="it-name">${Cards.esc(tr('f.stunned'))}</div>`;
     } else {
       const info = Intent.describe(move, (x) => Battle.previewEnemyDamage(x));
       el.intent.innerHTML = `<div class="it-row">${info.chips.map((c) =>
@@ -135,9 +135,10 @@ const BattleView = (() => {
     el.intent.style.top = `${Math.max(h + 6, FX.bossTop())}px`;
   }
 
+  /* text may be a plain string or an [English, Korean] pair */
   function speech(who, text, ms = 2800) {
-    const sp = Speakers[who] || { name: '', portrait: null };
-    el.speech.innerHTML = `${sp.portrait ? `<span class="sp-ic">${Icons.svg(sp.portrait)}</span>` : ''}<span class="sp-body"><em>${Cards.esc(sp.name)}</em>${Cards.esc(text)}</span>`;
+    const sp = Speakers[who] || Speakers.narrator;
+    el.speech.innerHTML = `${sp.portrait ? `<span class="sp-ic">${Icons.svg(sp.portrait)}</span>` : ''}<span class="sp-body"><em>${Cards.esc(loc(sp.name))}</em>${Cards.esc(loc(text))}</span>`;
     el.speech.classList.add('show');
     clearTimeout(speechTimer);
     speechTimer = setTimeout(() => el.speech.classList.remove('show'), ms);

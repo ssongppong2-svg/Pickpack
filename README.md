@@ -48,6 +48,15 @@ the basic Strike and Guard. Keywords include Shield, Fracture, Dim, Resonance, E
 Thorns, Stasis, Echo, Exhaust and Retain. Every pictogram is a hand-drawn inline SVG icon;
 the game uses no emoji.
 
+## Languages
+
+The game is fully playable in **English** and **Korean (한국어)**, including cards, story and
+every screen. On the first visit it follows the browser language; switch any time with the
+EN / 한국어 toggle on the title screen or in Settings. The choice is saved.
+
+Localized text lives next to the data it describes as `[English, Korean]` pairs
+(`js/cards.js`, `js/enemies.js`, `js/story.js`), and interface strings are in `js/i18n.js`.
+
 ## Saving
 
 Progress is saved automatically in the browser (`localStorage`).
@@ -65,6 +74,7 @@ css/cards.css       card faces, rarity frames, card backs
 css/screens.css     lobby, archive, before-pick, reward
 css/battle.css      battle screen
 js/util.js          shared helpers
+js/i18n.js          language detection, English/Korean interface strings
 js/icons.js         SVG icon set
 js/cards.js         keywords, rarities, card database, card renderer
 js/enemies.js       the five guardians and their intents

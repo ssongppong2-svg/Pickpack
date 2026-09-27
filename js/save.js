@@ -17,7 +17,7 @@ const Save = (() => {
       v: 2, points: START_POINTS, progress: 0, collection,
       deck: { strike: 4, guard: 4, concepts: STARTER.slice() },
       seenPrologue: false, endingSeen: false,
-      settings: { sound: true },
+      settings: { sound: true, lang: null },
       stats: { wins: 0, losses: 0, pulls: 0 },
       updatedAt: 0
     };
@@ -53,6 +53,7 @@ const Save = (() => {
     f.seenPrologue = !!d.seenPrologue;
     f.endingSeen = !!d.endingSeen;
     f.settings.sound = !(d.settings && d.settings.sound === false);
+    f.settings.lang = d.settings && ['en', 'ko'].includes(d.settings.lang) ? d.settings.lang : null;
     if (d.stats) for (const k of ['wins', 'losses', 'pulls']) f.stats[k] = int(d.stats[k], 0, 1e9, 0);
     f.updatedAt = int(d.updatedAt, 0, 8.64e15, 0);
     return f;
@@ -77,7 +78,7 @@ const Save = (() => {
   }
 
   function replace(d) { data = sanitize(d); commit(); }
-  function reset() { data = fresh(); commit(); }
+  function reset() { const lang = data.settings.lang; data = fresh(); data.settings.lang = lang; commit(); } // keep the chosen language
 
   /* ---------- collection ---------- */
   const owned = (id) => !!data.collection[id];
@@ -192,24 +193,24 @@ const Cloud = (() => {
   }
 
   async function login() {
-    if (!ready) { emit('error', 'Cloud save is unavailable right now. Progress is still saved in this browser.'); return; }
+    if (!ready) { emit('error', tr('cloud.unavailable')); return; }
     try { await fb.authM.signInWithPopup(fb.auth, new fb.authM.GoogleAuthProvider()); }
-    catch (e) { emit('error', e.code === 'auth/popup-closed-by-user' ? 'Login cancelled.' : 'Login failed. Check your connection.'); }
+    catch (e) { emit('error', e.code === 'auth/popup-closed-by-user' ? tr('cloud.cancelled') : tr('cloud.failed')); }
   }
 
   async function logout() {
     if (!ready || !user) return;
-    try { await fb.authM.signOut(fb.auth); emit('info', 'Logged out safely.'); }
-    catch (e) { emit('error', 'Logout failed.'); }
+    try { await fb.authM.signOut(fb.auth); emit('info', tr('cloud.loggedOut')); }
+    catch (e) { emit('error', tr('cloud.logoutFailed')); }
   }
 
   async function push(silent = false) {
     if (!ready || !user) return false;
     try {
       await fb.storeM.setDoc(fb.storeM.doc(fb.db, 'users', user.uid), { save: Save.data, updatedAt: Save.data.updatedAt });
-      if (!silent) emit('info', 'Cloud synchronization complete.');
+      if (!silent) emit('info', tr('cloud.synced'));
       return true;
-    } catch (e) { emit('error', 'Cloud sync failed.'); return false; }
+    } catch (e) { emit('error', tr('cloud.syncFailed')); return false; }
   }
 
   /* Take the cloud copy only when it is newer. Never changes the current screen. */
@@ -222,7 +223,7 @@ const Cloud = (() => {
         Save.replace(remote);
         emit('loaded');
       } else await push(true);
-    } catch (e) { emit('error', 'Could not read your cloud save.'); }
+    } catch (e) { emit('error', tr('cloud.readFailed')); }
   }
 
   return { configured, init, login, logout, push, on: (fn) => listeners.push(fn), get user() { return user; }, get available() { return ready; } };

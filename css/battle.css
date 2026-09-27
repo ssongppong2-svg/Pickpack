@@ -120,7 +120,8 @@
 .ov-count b { font-size: 68px; line-height: 1; }
 .ov-count > span { font-size: 22px; color: var(--ink-3); }
 .b-override.met .ov-count b { text-shadow: 0 0 26px #fff; }
-.b-override.met .ov-hint::after { content: ' / Overload it!'; color: #fff; }
+.ov-met { display: none; color: #fff; }
+.b-override.met .ov-met { display: inline; }
 .ov-bar { width: min(420px, 80%); height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; }
 .ov-bar i { display: block; height: 100%; background: #fff; transform-origin: left; box-shadow: 0 0 10px #fff; }
 

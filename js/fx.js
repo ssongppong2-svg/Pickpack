@@ -428,7 +428,7 @@ const FX = (() => {
       const big = x.kind === 'dmg' || x.kind === 'crit';
       const size = (x.kind === 'crit' ? 34 : big ? 28 : 17) * u;
       ctx.save(); ctx.globalAlpha = Math.min(1, x.life * 1.6);
-      ctx.font = `700 ${size}px Cinzel, 'Times New Roman', serif`; ctx.textAlign = 'center';
+      ctx.font = `700 ${size}px Cinzel, 'Nanum Myeongjo', 'Times New Roman', serif`; ctx.textAlign = 'center';
       ctx.shadowBlur = 12; ctx.shadowColor = white(0.9);
       ctx.fillStyle = x.kind === 'heal' ? '#ffffff' : x.kind === 'self' ? '#bdbdbd' : x.kind === 'status' ? '#d8d8d8' : '#ffffff';
       ctx.fillText(x.text, x.x, x.y);

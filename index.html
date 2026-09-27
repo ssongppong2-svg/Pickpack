@@ -8,7 +8,7 @@
   <title>pickpack - Monochrome Reality</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=Nanum+Myeongjo:wght@400;700;800&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/cards.css">
   <link rel="stylesheet" href="css/screens.css">
@@ -17,21 +17,25 @@
 <body>
 
   <!-- Title -->
-  <section id="screen-title" class="screen fullscreen" data-screen="title" aria-label="Title">
+  <section id="screen-title" class="screen fullscreen" data-screen="title" data-i18n-aria="aria.title" aria-label="Title">
+    <div class="lang-switch" role="group" data-i18n-aria="aria.language" aria-label="Language">
+      <button data-lang="en" aria-pressed="false">EN</button>
+      <button data-lang="ko" aria-pressed="false">한국어</button>
+    </div>
     <div class="title-wrap">
       <div class="title-emblem"><i data-icon="p_picker"></i></div>
       <h1 id="gameTitle">pickpack</h1>
-      <div class="title-sub">Monochrome Reality</div>
+      <div class="title-sub" data-i18n="title.sub">Monochrome Reality</div>
       <div class="start-prompt" id="startPrompt">Click anywhere to begin</div>
     </div>
-    <div class="title-foot">A deck-building card adventure in five Phases</div>
+    <div class="title-foot" data-i18n="title.foot">A deck-building card adventure in five Phases</div>
   </section>
 
   <main id="app">
     <!-- Story -->
-    <section id="screen-story" class="screen talk" data-screen="story" aria-label="Story">
+    <section id="screen-story" class="screen talk" data-screen="story" data-i18n-aria="aria.story" aria-label="Story">
       <canvas id="sCanvas"></canvas>
-      <button id="sSkip" class="btn ghost small" aria-label="Skip scene"><i data-icon="skip"></i><span>Skip</span></button>
+      <button id="sSkip" class="btn ghost small" data-i18n-aria="ui.skipScene" aria-label="Skip scene"><i data-icon="skip"></i><span data-i18n="ui.skip">Skip</span></button>
       <div class="t-center"></div>
       <div class="t-box">
         <div class="t-portrait"></div>
@@ -41,86 +45,86 @@
     </section>
 
     <!-- Lobby -->
-    <section id="screen-lobby" class="screen" data-screen="lobby" aria-label="Sanctuary">
+    <section id="screen-lobby" class="screen" data-screen="lobby" data-i18n-aria="lobby.title" aria-label="Sanctuary">
       <header class="topbar">
         <div class="tb-brand"><i data-icon="p_picker"></i><span>pickpack</span></div>
-        <div class="tb-title">Sanctuary of Concepts</div>
+        <div class="tb-title" data-i18n="lobby.title">Sanctuary of Concepts</div>
         <div class="tb-right">
-          <div class="points-chip" data-tip="Concept Points: spend them in the Before-Pick to extract new concepts."><i data-icon="gem"></i><b class="pts">0</b></div>
+          <div class="points-chip" data-i18n-tip="tip.points"><i data-icon="gem"></i><b class="pts">0</b></div>
           <button class="icon-btn" data-act="sound" aria-label="Toggle sound"></button>
-          <button class="icon-btn" data-act="settings" aria-label="Settings"><i data-icon="sliders"></i></button>
+          <button class="icon-btn" data-act="settings" data-i18n-aria="ui.settings" aria-label="Settings"><i data-icon="sliders"></i></button>
         </div>
       </header>
       <div class="lobby">
         <div class="l-status" id="lStatus"></div>
-        <nav class="track" id="lTrack" aria-label="Phases"></nav>
+        <nav class="track" id="lTrack" data-i18n-aria="aria.phases" aria-label="Phases"></nav>
         <article class="chapter-card" id="lChapter"></article>
-        <div class="deck-wrap" id="lDeckWrap" role="button" tabindex="0" aria-label="Open the Archive">
+        <div class="deck-wrap" id="lDeckWrap" role="button" tabindex="0" data-i18n-aria="lobby.openArchive" aria-label="Open the Archive">
           <div class="deck-head" id="lDeckHead"></div>
           <div class="deck-strip" id="lDeck"></div>
         </div>
         <div class="lobby-actions">
-          <button class="btn big" data-go="gacha"><i data-icon="pack"></i><span>Before-Pick</span></button>
-          <button class="btn big" data-go="archive"><i data-icon="cards"></i><span>Archive</span><em class="dot" id="lArchiveDot"></em></button>
+          <button class="btn big" data-go="gacha"><i data-icon="pack"></i><span data-i18n="nav.gacha">Before-Pick</span></button>
+          <button class="btn big" data-go="archive"><i data-icon="cards"></i><span data-i18n="nav.archive">Archive</span><em class="dot" id="lArchiveDot"></em></button>
           <button class="btn big primary" id="lEnter"><i data-icon="swords"></i><span>Enter Phase</span></button>
         </div>
       </div>
     </section>
 
     <!-- Archive: deck building and enhancement -->
-    <section id="screen-archive" class="screen" data-screen="archive" aria-label="Archive">
+    <section id="screen-archive" class="screen" data-screen="archive" data-i18n-aria="nav.archive" aria-label="Archive">
       <header class="topbar">
-        <button class="icon-btn" data-go="lobby" aria-label="Back to the Sanctuary"><i data-icon="arrowLeft"></i></button>
-        <div class="tb-title">Archive</div>
+        <button class="icon-btn" data-go="lobby" data-i18n-aria="ui.back" aria-label="Back to the Sanctuary"><i data-icon="arrowLeft"></i></button>
+        <div class="tb-title" data-i18n="nav.archive">Archive</div>
         <div class="tb-right">
-          <div class="points-chip" data-tip="Concept Points: spend them in the Before-Pick to extract new concepts."><i data-icon="gem"></i><b class="pts">0</b></div>
+          <div class="points-chip" data-i18n-tip="tip.points"><i data-icon="gem"></i><b class="pts">0</b></div>
           <button class="icon-btn" data-act="sound" aria-label="Toggle sound"></button>
-          <button class="icon-btn" data-act="settings" aria-label="Settings"><i data-icon="sliders"></i></button>
+          <button class="icon-btn" data-act="settings" data-i18n-aria="ui.settings" aria-label="Settings"><i data-icon="sliders"></i></button>
         </div>
       </header>
       <div class="archive">
         <div class="ar-bar">
           <div class="ar-tabs" id="arTabs" role="tablist">
-            <button data-f="all" class="on">All</button>
-            <button data-f="attack">Attack</button>
-            <button data-f="skill">Skill</button>
-            <button data-f="power">Power</button>
-            <button data-f="deck">In Deck</button>
-            <button data-f="enh">Enhance</button>
+            <button data-f="all" class="on" data-i18n="ar.all">All</button>
+            <button data-f="attack" data-i18n="ar.attack">Attack</button>
+            <button data-f="skill" data-i18n="ar.skill">Skill</button>
+            <button data-f="power" data-i18n="ar.power">Power</button>
+            <button data-f="deck" data-i18n="ar.deck">In Deck</button>
+            <button data-f="enh" data-i18n="ar.enh">Enhance</button>
           </div>
           <div class="ar-info"><span id="arDeckCount"></span><span id="arCollect"></span></div>
           <button class="btn small" id="arEnhanceAll"><i data-icon="levelUp"></i><span>Enhance all</span></button>
         </div>
-        <p class="ar-help">Click a concept to add it to your deck or remove it. Duplicates from the Before-Pick become Echoes, and Echoes Enhance a card up to ++.</p>
+        <p class="ar-help" data-i18n="ar.help">Click a concept to add it to your deck or remove it. Duplicates from the Before-Pick become Echoes, and Echoes Enhance a card up to ++.</p>
         <div class="ar-grid" id="arGrid"></div>
       </div>
     </section>
 
     <!-- Before-Pick (gacha) -->
-    <section id="screen-gacha" class="screen" data-screen="gacha" aria-label="Before-Pick">
+    <section id="screen-gacha" class="screen" data-screen="gacha" data-i18n-aria="nav.gacha" aria-label="Before-Pick">
       <header class="topbar">
-        <button class="icon-btn" data-go="lobby" aria-label="Back to the Sanctuary"><i data-icon="arrowLeft"></i></button>
-        <div class="tb-title">Before-Pick</div>
+        <button class="icon-btn" data-go="lobby" data-i18n-aria="ui.back" aria-label="Back to the Sanctuary"><i data-icon="arrowLeft"></i></button>
+        <div class="tb-title" data-i18n="nav.gacha">Before-Pick</div>
         <div class="tb-right">
-          <div class="points-chip" data-tip="Concept Points: spend them in the Before-Pick to extract new concepts."><i data-icon="gem"></i><b class="pts">0</b></div>
+          <div class="points-chip" data-i18n-tip="tip.points"><i data-icon="gem"></i><b class="pts">0</b></div>
           <button class="icon-btn" data-act="sound" aria-label="Toggle sound"></button>
-          <button class="icon-btn" data-act="settings" aria-label="Settings"><i data-icon="sliders"></i></button>
+          <button class="icon-btn" data-act="settings" data-i18n-aria="ui.settings" aria-label="Settings"><i data-icon="sliders"></i></button>
         </div>
       </header>
       <div class="gacha">
         <aside class="g-rates">
-          <h3>Manifestation Rates</h3>
+          <h3 data-i18n="g.rates">Manifestation Rates</h3>
           <table class="rates">
-            <tr class="r-L"><td><i class="pip"></i>Legendary</td><td>1%</td></tr>
-            <tr class="r-E"><td><i class="pip"></i>Epic</td><td>5%</td></tr>
-            <tr class="r-R"><td><i class="pip"></i>Rare</td><td>14%</td></tr>
-            <tr class="r-U"><td><i class="pip"></i>Uncommon</td><td>30%</td></tr>
-            <tr class="r-C"><td><i class="pip"></i>Common</td><td>50%</td></tr>
+            <tr class="r-L"><td><i class="pip"></i><span data-i18n="rarity.L">Legendary</span></td><td>1%</td></tr>
+            <tr class="r-E"><td><i class="pip"></i><span data-i18n="rarity.E">Epic</span></td><td>5%</td></tr>
+            <tr class="r-R"><td><i class="pip"></i><span data-i18n="rarity.R">Rare</span></td><td>14%</td></tr>
+            <tr class="r-U"><td><i class="pip"></i><span data-i18n="rarity.U">Uncommon</span></td><td>30%</td></tr>
+            <tr class="r-C"><td><i class="pip"></i><span data-i18n="rarity.C">Common</span></td><td>50%</td></tr>
           </table>
           <ul class="g-notes">
-            <li><i data-icon="sparkle"></i><span>Every x10 extraction guarantees at least one Epic or higher.</span></li>
-            <li><i data-icon="shard"></i><span>Duplicates become Echoes that Enhance the card up to ++.</span></li>
-            <li><i data-icon="gem"></i><span>Echoes past the max level return Concept Points.</span></li>
+            <li><i data-icon="sparkle"></i><span data-i18n="g.note1">Every x10 extraction guarantees at least one Epic or higher.</span></li>
+            <li><i data-icon="shard"></i><span data-i18n="g.note2">Duplicates become Echoes that Enhance the card up to ++.</span></li>
+            <li><i data-icon="gem"></i><span data-i18n="g.note3">Echoes past the max level return Concept Points.</span></li>
           </ul>
         </aside>
         <div class="g-center">
@@ -130,29 +134,29 @@
             <div class="card card-back r-C"><div class="cb-inner"><i data-icon="p_picker"></i><span>pickpack</span></div></div>
           </div>
           <div class="g-buttons">
-            <button class="btn big" id="gOne"><i data-icon="pack"></i><span>Extract x1</span><em><i data-icon="gem"></i>140</em></button>
-            <button class="btn big primary" id="gTen"><i data-icon="pack"></i><span>Extract x10</span><em><i data-icon="gem"></i>1400</em></button>
+            <button class="btn big" id="gOne"><i data-icon="pack"></i><span data-i18n="g.one">Extract x1</span><em><i data-icon="gem"></i>140</em></button>
+            <button class="btn big primary" id="gTen"><i data-icon="pack"></i><span data-i18n="g.ten">Extract x10</span><em><i data-icon="gem"></i>1400</em></button>
           </div>
           <div class="g-owned" id="gOwned"></div>
         </div>
         <div class="g-result" id="gResult">
-          <h2>New Concepts Manifested</h2>
-          <p class="g-tip">Click a card to reveal it.</p>
+          <h2 data-i18n="g.resultTitle">New Concepts Manifested</h2>
+          <p class="g-tip" data-i18n="g.tapToReveal">Click a card to reveal it.</p>
           <div class="g-grid" id="gGrid"></div>
           <div class="g-actions">
-            <button class="btn ghost" id="gReveal"><i data-icon="eye"></i><span>Reveal all</span></button>
-            <button class="btn" id="gAgain"><i data-icon="pack"></i><span>Extract again</span></button>
-            <button class="btn primary" id="gDone"><i data-icon="check"></i><span>Done</span></button>
+            <button class="btn ghost" id="gReveal"><i data-icon="eye"></i><span data-i18n="g.revealAll">Reveal all</span></button>
+            <button class="btn" id="gAgain"><i data-icon="pack"></i><span data-i18n="g.again">Extract again</span></button>
+            <button class="btn primary" id="gDone"><i data-icon="check"></i><span data-i18n="ui.done">Done</span></button>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Battle -->
-    <section id="screen-battle" class="screen" data-screen="battle" aria-label="Battle">
+    <section id="screen-battle" class="screen" data-screen="battle" data-i18n-aria="aria.battle" aria-label="Battle">
       <div class="b-top">
         <div class="b-side player">
-          <div class="b-name"><i data-icon="p_picker"></i><span>PICKER</span></div>
+          <div class="b-name"><i data-icon="p_picker"></i><span data-i18n="b.picker">PICKER</span></div>
           <div class="b-hp"><div class="b-hp-lag" id="bpHpLag"></div><div class="b-hp-fill" id="bpHpFill"></div><span id="bpHpText"></span></div>
           <div class="b-row"><span class="b-shield" id="bpShield"></span><div class="b-status" id="bpStatus"></div></div>
         </div>
@@ -166,7 +170,7 @@
           <div class="b-hp"><div class="b-hp-lag" id="bfHpLag"></div><div class="b-hp-fill" id="bfHpFill"></div><span id="bfHpText"></span></div>
           <div class="b-row"><div class="b-status" id="bfStatus"></div><span class="b-shield" id="bfShield"></span></div>
         </div>
-        <button class="icon-btn b-menu" id="bMenu" aria-label="Pause menu"><i data-icon="menu"></i></button>
+        <button class="icon-btn b-menu" id="bMenu" data-i18n-aria="b.pause" aria-label="Pause menu"><i data-icon="menu"></i></button>
       </div>
       <div class="b-stage" id="bStage">
         <canvas id="bCanvas"></canvas>
@@ -177,21 +181,21 @@
       </div>
       <div class="b-bottom">
         <div class="b-left">
-          <div class="b-energy" id="bEnergy" data-tip="Energy: Spent to play cards. Refills to 3 at the start of your turn."></div>
-          <button class="pile" id="bDraw" data-tip="Draw pile: click to view it."><i data-icon="deck"></i><b>0</b></button>
+          <div class="b-energy" id="bEnergy" data-i18n-tip="tip.energy"></div>
+          <button class="pile" id="bDraw" data-i18n-tip="tip.draw"><i data-icon="deck"></i><b>0</b></button>
         </div>
-        <div class="b-hand" id="bHand" aria-label="Your hand"></div>
+        <div class="b-hand" id="bHand" data-i18n-aria="b.hand" aria-label="Your hand"></div>
         <div class="b-right">
-          <button class="btn end" id="bEnd"><i data-icon="hourglass"></i><span>End Turn</span><kbd>E</kbd></button>
+          <button class="btn end" id="bEnd"><i data-icon="hourglass"></i><span data-i18n="b.endTurn">End Turn</span><kbd>E</kbd></button>
           <div class="b-piles">
-            <button class="pile" id="bDiscard" data-tip="Discard pile: click to view it."><i data-icon="discard"></i><b>0</b></button>
-            <button class="pile" id="bExhaust" data-tip="Exhausted: cards removed for this battle."><i data-icon="exhaust"></i><b>0</b></button>
+            <button class="pile" id="bDiscard" data-i18n-tip="tip.discard"><i data-icon="discard"></i><b>0</b></button>
+            <button class="pile" id="bExhaust" data-i18n-tip="tip.exhaust"><i data-icon="exhaust"></i><b>0</b></button>
           </div>
         </div>
       </div>
       <div class="b-override" id="bOverride">
-        <div class="ov-title">SYSTEM OVERRIDE</div>
-        <div class="ov-hint">Click, tap or press any key as fast as you can</div>
+        <div class="ov-title" data-i18n="ov.title">SYSTEM OVERRIDE</div>
+        <div class="ov-hint"><span data-i18n="ov.hint">Click, tap or press any key as fast as you can</span><span class="ov-met" data-i18n="ov.met"> / Overload it!</span></div>
         <div class="ov-count"><b id="ovCount">0</b><span>/ <span id="ovTarget">20</span></span></div>
         <div class="ov-bar"><i id="ovTimer"></i></div>
       </div>
@@ -199,17 +203,17 @@
     </section>
 
     <!-- Reward -->
-    <section id="screen-reward" class="screen" data-screen="reward" aria-label="Reward">
+    <section id="screen-reward" class="screen" data-screen="reward" data-i18n-aria="aria.reward" aria-label="Reward">
       <div class="reward">
         <small id="rCode"></small>
         <h1 id="rTitle">Phase Broken</h1>
         <div class="r-stats" id="rStats"></div>
         <div class="r-points" id="rPoints"></div>
-        <h3>Pick a concept to keep</h3>
+        <h3 data-i18n="r.pick">Pick a concept to keep</h3>
         <div class="r-choices" id="rChoices"></div>
         <div class="r-actions">
           <button class="btn ghost" id="rSkip"><i data-icon="gem"></i><span>Skip</span></button>
-          <button class="btn primary" id="rTake" disabled><i data-icon="check"></i><span>Take concept</span></button>
+          <button class="btn primary" id="rTake" disabled><i data-icon="check"></i><span data-i18n="r.take">Take concept</span></button>
         </div>
       </div>
     </section>
@@ -230,6 +234,7 @@
   <div id="tip" role="tooltip"></div>
 
   <script src="js/util.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/icons.js"></script>
   <script src="js/cards.js"></script>
   <script src="js/enemies.js"></script>

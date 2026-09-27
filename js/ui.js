@@ -39,15 +39,15 @@ class Talk {
         this.box.dataset.speaker = line.s || 'narrator';
         this.portrait.innerHTML = sp.portrait ? Icons.svg(sp.portrait) : '';
         this.portrait.classList.toggle('none', !sp.portrait);
-        this.name.textContent = sp.name;
-        this.type(this.text, line.t, 1);
+        this.name.textContent = loc(sp.name);
+        this.type(this.text, loc(line.t), 1);
       } else {
         this.box.classList.remove('show');
         this.center.className = `t-center mode-${mode}`;
-        const label = mode === 'title' ? (line.sub || '') : (mode === 'whisper' ? sp.name : '');
+        const label = mode === 'title' ? loc(line.sub || '') : (mode === 'whisper' ? loc(sp.name) : '');
         this.center.innerHTML = `${label ? `<small>${Cards.esc(label)}</small>` : ''}<b></b>`;
         void this.center.offsetWidth; this.center.classList.add('show');
-        this.type(this.center.querySelector('b'), line.t, mode === 'title' ? 0 : 0.8);
+        this.type(this.center.querySelector('b'), loc(line.t), mode === 'title' ? 0 : 0.8);
       }
     });
   }
@@ -164,7 +164,7 @@ const UI = (() => {
   function hideTip() { tipFor = null; if (tipEl) tipEl.classList.remove('show'); }
 
   /* ---------- modal ---------- */
-  function modal({ title, body = '', actions = [{ label: 'Close', value: null }], wide = false, dismissValue = null }) {
+  function modal({ title, body = '', actions = [{ label: tr('ui.close'), value: null }], wide = false, dismissValue = null }) {
     return new Promise((resolve) => {
       const m = $('#modal'); const card = m.querySelector('.m-card');
       card.classList.toggle('wide', wide);
@@ -190,18 +190,18 @@ const UI = (() => {
     });
   }
 
-  function confirm(title, text, okLabel = 'Confirm', danger = false) {
+  function confirm(title, text, okLabel = tr('ui.confirm'), danger = false) {
     return modal({
       title, body: `<p>${Cards.esc(text)}</p>`, dismissValue: false,
-      actions: [{ label: 'Cancel', value: false, cls: 'ghost' }, { label: okLabel, value: true, cls: danger ? 'danger' : 'primary' }]
+      actions: [{ label: tr('ui.cancel'), value: false, cls: 'ghost' }, { label: okLabel, value: true, cls: danger ? 'danger' : 'primary' }]
     });
   }
 
   function showPile(title, cards, note) {
-    const list = cards.slice().sort((a, b) => Cards.get(a.id).name.localeCompare(Cards.get(b.id).name));
+    const list = cards.slice().sort((a, b) => Cards.name(a.id).localeCompare(Cards.name(b.id), I18N.lang));
     const body = list.length
       ? `<p class="m-note">${Cards.esc(note)}</p><div class="pile-grid">${list.map((c) => Cards.html(c.id, c.lv, { cls: 'sm' })).join('')}</div>`
-      : `<p class="m-note">${Cards.esc(note)}</p><p class="empty-note">No cards here.</p>`;
+      : `<p class="m-note">${Cards.esc(note)}</p><p class="empty-note">${Cards.esc(tr('ui.noCards'))}</p>`;
     return modal({ title: `${title} (${cards.length})`, body, wide: true });
   }
 

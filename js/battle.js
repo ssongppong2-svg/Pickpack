@@ -66,7 +66,7 @@ const Battle = (() => {
     const T = unit(who); const f = fxOf(who);
     if (n > 0 && T.st.stasis > 0) {
       T.st.stasis -= 1; if (!T.st.stasis) delete T.st.stasis;
-      FX.float(f, 'Negated', 'status'); FX.aura(f, 'shield'); Sfx.play('blocked');
+      FX.float(f, tr('f.negated'), 'status'); FX.aura(f, 'shield'); Sfx.play('blocked');
       BattleView.bars(B);
       return { unblocked: 0, blocked: n, negated: true };
     }
@@ -76,7 +76,7 @@ const Battle = (() => {
     if (rest > 0) {
       FX.hit(f, rest / 3); FX.float(f, `-${rest}`, rest >= 25 ? 'crit' : 'dmg');
       FX.burst(f, { n: Math.min(44, 8 + rest) }); Sfx.play(rest >= 20 ? 'heavy' : 'hit');
-    } else { FX.float(f, 'Blocked', 'status'); FX.aura(f, 'shield'); Sfx.play('blocked'); }
+    } else { FX.float(f, tr('f.blocked'), 'status'); FX.aura(f, 'shield'); Sfx.play('blocked'); }
     if (who === 'foe') B.stats.dealt += rest; else B.stats.taken += rest;
     BattleView.bars(B);
     return { unblocked: rest, blocked, negated: false };
@@ -95,14 +95,14 @@ const Battle = (() => {
     const T = unit(who); const f = fxOf(who);
     const before = T.hp; T.hp = Math.min(T.maxHp, T.hp + n);
     const got = T.hp - before; // show what was really healed, never more
-    FX.float(f, got > 0 ? `+${got}` : 'Full HP', 'heal'); FX.aura(f, 'heal'); Sfx.play('heal');
+    FX.float(f, got > 0 ? `+${got}` : tr('f.fullHp'), 'heal'); FX.aura(f, 'heal'); Sfx.play('heal');
     BattleView.bars(B);
   }
 
   function gainShield(who, n) {
     const T = unit(who); const f = fxOf(who);
     T.shield += n;
-    FX.float(f, `+${n} Shield`, 'status'); FX.aura(f, 'shield'); Sfx.play('block');
+    FX.float(f, tr('f.shield', { n }), 'status'); FX.aura(f, 'shield'); Sfx.play('block');
     BattleView.bars(B);
   }
 
@@ -110,7 +110,7 @@ const Battle = (() => {
     if (!n) return;
     const T = unit(who); const f = fxOf(who); const kw = Keywords[k];
     T.st[k] = (T.st[k] || 0) + n;
-    FX.float(f, `${kw.name} +${n}`, 'status');
+    FX.float(f, tr('f.status', { name: Cards.kwName(k), n }), 'status');
     FX.aura(f, kw.debuff ? 'debuff' : 'buff'); Sfx.play(kw.debuff ? 'debuff' : 'buff');
     BattleView.bars(B); BattleView.intent(B); BattleView.hand(B);
   }
@@ -128,10 +128,10 @@ const Battle = (() => {
       if (!B.drawPile.length) {
         if (!B.discard.length) break;
         B.drawPile = shuffle(B.discard); B.discard = [];
-        FX.float('hero', 'Reshuffle', 'status');
+        FX.float('hero', tr('f.reshuffle'), 'status');
       }
       const c = B.drawPile.pop();
-      if (B.hand.length >= HAND_MAX) { B.discard.push(c); FX.float('hero', 'Hand full', 'status'); continue; }
+      if (B.hand.length >= HAND_MAX) { B.discard.push(c); FX.float('hero', tr('f.handFull'), 'status'); continue; }
       c.fresh = true; c.freshIdx = k++;
       if (opts.free) c.free = true;
       B.hand.push(c);
@@ -145,7 +145,7 @@ const Battle = (() => {
     const cands = B.hand.filter((c) => !c.sealed && !Cards.get(c.id).unplayable);
     let done = 0;
     for (let i = 0; i < n && cands.length; i++) { cands.splice(randInt(0, cands.length - 1), 1)[0].sealed = true; done++; }
-    if (done) { FX.float('hero', done > 1 ? `${done} cards sealed` : 'Card sealed', 'status'); Sfx.play('debuff'); }
+    if (done) { FX.float('hero', done > 1 ? tr('f.sealedN', { n: done }) : tr('f.sealedOne'), 'status'); Sfx.play('debuff'); }
   }
 
   function distort(n) {
@@ -206,7 +206,7 @@ const Battle = (() => {
     if (P.st.bloom) { const n = P.st.bloom; P.st.bloom -= 1; if (!P.st.bloom) delete P.st.bloom; heal('hero', n); }
     if (P.st.solar) heal('hero', P.st.solar);
     B.energy = B.maxEnergy + (P.st.transcend || 0);
-    BattleView.banner('Your Turn', `Turn ${B.turn}`); Sfx.play('turn');
+    BattleView.banner(tr('b.yourTurn'), tr('b.turnN', { n: B.turn })); Sfx.play('turn');
     renderAll();
     await wait(380); if (!live(tok)) return;
     const n = Math.max(0, DRAW + (P.st.foresight || 0) - B.drawLess); B.drawLess = 0;
@@ -235,7 +235,7 @@ const Battle = (() => {
     let reps = 1;
     if (def.type === 'attack' && B.player.st.echo) { reps = 2; B.player.st.echo -= 1; if (!B.player.st.echo) delete B.player.st.echo; }
     for (let r = 0; r < reps; r++) {
-      if (r) { FX.float('hero', 'Echo', 'status'); Sfx.play('buff'); await wait(260); if (!live(tok)) return; }
+      if (r) { FX.float('hero', tr('f.echo'), 'status'); Sfx.play('buff'); await wait(260); if (!live(tok)) return; }
       for (const op of Cards.effects(c.id, c.lv)) {
         await effect(op, tok);
         if (!live(tok) || checkEnd()) return;
@@ -255,7 +255,7 @@ const Battle = (() => {
     Sfx.play('error');
     const node = BattleView.el.hand.querySelector(`[data-uid="${c.uid}"]`);
     if (node) { node.classList.remove('shake'); void node.offsetWidth; node.classList.add('shake'); }
-    const why = def.unplayable ? `${def.name} cannot be played.` : c.sealed ? 'That card is sealed this turn.' : 'Not enough Energy.';
+    const why = def.unplayable ? tr('b.cantPlay', { name: Cards.name(c.id) }) : c.sealed ? tr('b.sealed') : tr('b.noEnergy');
     UI.toast(why, def.unplayable ? 'static' : c.sealed ? 'lock' : 'bolt');
   }
 
@@ -279,7 +279,7 @@ const Battle = (() => {
       case 'shield': gainShield('hero', a); break;
       case 'heal': heal('hero', a); break;
       case 'loseHp': hurt('hero', a); break;
-      case 'energy': B.energy += a; FX.float('hero', `+${a} Energy`, 'status'); Sfx.play('buff'); break;
+      case 'energy': B.energy += a; FX.float('hero', tr('f.energy', { n: a }), 'status'); Sfx.play('buff'); break;
       case 'draw': if (a > 0) await draw(a); break;
       case 'drawFree': await draw(a, { free: true }); break;
       case 'foe': applyStatus('foe', a, b); break;
@@ -287,7 +287,7 @@ const Battle = (() => {
       case 'doubleFoe': if (F.st[a]) applyStatus('foe', a, F.st[a]); break;
       case 'cleanse':
         for (const s of ['fracture', 'dim', 'ember']) delete P.st[s];
-        FX.float('hero', 'Cleansed', 'status'); FX.aura('hero', 'buff');
+        FX.float('hero', tr('f.cleansed'), 'status'); FX.aura('hero', 'buff');
         break;
       default: break;
     }
@@ -320,7 +320,7 @@ const Battle = (() => {
 
   async function enemyTurn(tok) {
     const F = B.foe; const P = B.player;
-    BattleView.banner(B.boss.short, F.phase === 2 ? 'Unmaking' : 'Enemy Turn'); Sfx.play('enemy');
+    BattleView.banner(loc(B.boss.short), F.phase === 2 ? tr('b.unmaking') : tr('b.enemyTurn')); Sfx.play('enemy');
     F.shield = 0;
     BattleView.bars(B);
     await wait(700); if (!live(tok)) return;
@@ -333,7 +333,7 @@ const Battle = (() => {
 
     if (F.st.stun) {
       F.st.stun -= 1; if (!F.st.stun) delete F.st.stun;
-      FX.float('boss', 'Stunned', 'status'); FX.setBoss({ stun: false });
+      FX.float('boss', tr('f.stunned'), 'status'); FX.setBoss({ stun: false });
       await wait(800); if (!live(tok)) return;
     } else {
       const move = F.move; const key = F.moveKey;
@@ -341,7 +341,7 @@ const Battle = (() => {
       if (move.say && (B.said[key] === 1 || Math.random() < 0.3)) BattleView.speech(B.chapter.boss, pickOne(move.say), 2300);
       if (F.passives.includes('unmaking') && P.shield > 0) {
         const lost = Math.ceil(P.shield / 2); P.shield -= lost;
-        FX.float('hero', `Unmade -${lost}`, 'status'); FX.glitch(0.6); Sfx.play('glitch');
+        FX.float('hero', tr('f.unmade', { n: lost }), 'status'); FX.glitch(0.6); Sfx.play('glitch');
         BattleView.bars(B);
         await wait(380); if (!live(tok)) return;
       }
@@ -381,13 +381,13 @@ const Battle = (() => {
       case 'foe': applyStatus('hero', a, b); await wait(320); break;
       case 'addCard':
         for (let i = 0; i < b; i++) B.drawPile.splice(randInt(0, B.drawPile.length), 0, newCard(a, 0));
-        FX.float('hero', `+${b} ${Cards.get(a).name}`, 'status'); FX.glitch(0.4); Sfx.play('glitch');
+        FX.float('hero', tr('f.addCard', { n: b, name: Cards.name(a) }), 'status'); FX.glitch(0.4); Sfx.play('glitch');
         BattleView.piles(B);
         await wait(380);
         break;
-      case 'seal': B.pendingSeal += a; FX.float('hero', 'Silence looms', 'status'); Sfx.play('debuff'); await wait(320); break;
-      case 'drawLess': B.drawLess += a; FX.float('hero', `Next draw -${a}`, 'status'); Sfx.play('debuff'); await wait(320); break;
-      case 'charge': FX.aura('boss', 'charge'); FX.shake(5); FX.float('boss', 'Charging', 'status'); Sfx.play('whoosh'); await wait(750); break;
+      case 'seal': B.pendingSeal += a; FX.float('hero', tr('f.silence'), 'status'); Sfx.play('debuff'); await wait(320); break;
+      case 'drawLess': B.drawLess += a; FX.float('hero', tr('f.drawLess', { n: a }), 'status'); Sfx.play('debuff'); await wait(320); break;
+      case 'charge': FX.aura('boss', 'charge'); FX.shake(5); FX.float('boss', tr('f.charging'), 'status'); Sfx.play('whoosh'); await wait(750); break;
       default: break;
     }
   }
@@ -471,7 +471,7 @@ const Battle = (() => {
     for (const s of ['fracture', 'dim', 'ember']) delete B.player.st[s];
     const light = newCard('last_light', 0); light.fresh = true;
     if (B.hand.length < HAND_MAX) B.hand.push(light); else B.drawPile.push(light);
-    FX.aura('hero', 'heal'); FX.float('hero', 'Last Light', 'status'); Sfx.play('legend');
+    FX.aura('hero', 'heal'); FX.float('hero', Cards.name('last_light'), 'status'); Sfx.play('legend');
     renderAll();
     await wait(450);
   }
@@ -482,7 +482,7 @@ const Battle = (() => {
     const result = { win, chapterIdx: B.chapterIdx, replay: B.replay, turns: B.turn, stats: Object.assign({}, B.stats) };
     if (win) {
       Sfx.play('win');
-      BattleView.banner('Phase Broken', B.chapter.name);
+      BattleView.banner(tr('b.phaseBroken'), loc(B.chapter.name));
       await FX.bossDeath();
     } else {
       Sfx.play('lose');
@@ -525,9 +525,9 @@ const Battle = (() => {
     });
     el.hand.addEventListener('mouseover', (e) => { if (e.target.closest('.card.playable')) Sfx.play('hover', 60); });
     el.end.addEventListener('click', () => endTurn());
-    el.draw.addEventListener('click', () => B && UI.showPile('Draw Pile', B.drawPile, 'Shown in no particular order. Cards are drawn at random.'));
-    el.discard.addEventListener('click', () => B && UI.showPile('Discard Pile', B.discard, 'Shuffled back into the draw pile when it runs out.'));
-    el.exhaust.addEventListener('click', () => B && UI.showPile('Exhausted', B.exhausted, 'Removed for the rest of this battle.'));
+    el.draw.addEventListener('click', () => B && UI.showPile(tr('pile.draw'), B.drawPile, tr('pile.drawNote')));
+    el.discard.addEventListener('click', () => B && UI.showPile(tr('pile.discard'), B.discard, tr('pile.discardNote')));
+    el.exhaust.addEventListener('click', () => B && UI.showPile(tr('pile.exhaust'), B.exhausted, tr('pile.exhaustNote')));
     window.addEventListener('keydown', (e) => {
       if (!B || B.over || B.busy || !UI.isActive('battle') || UI.modalOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key >= '1' && e.key <= '9') { const c = B.hand[Number(e.key) - 1]; if (c) play(c.uid); }
