@@ -1,0 +1,113 @@
+/* pickpack - cards. Rarity is told by glow strength and gem pips, all in monochrome. */
+.r-B { --rc: #555; --rg: rgba(255, 255, 255, .05); --gs: 2px; }
+.r-S { --rc: #3d3d3d; --rg: rgba(255, 255, 255, .03); --gs: 0px; }
+.r-C { --rc: #6e6e6e; --rg: rgba(255, 255, 255, .08); --gs: 4px; }
+.r-U { --rc: #9c9c9c; --rg: rgba(255, 255, 255, .18); --gs: 7px; }
+.r-R { --rc: #c6c6c6; --rg: rgba(255, 255, 255, .32); --gs: 10px; }
+.r-E { --rc: #ececec; --rg: rgba(255, 255, 255, .5); --gs: 14px; }
+.r-L { --rc: #ffffff; --rg: rgba(255, 255, 255, .78); --gs: 18px; }
+.r-X { --rc: #ffffff; --rg: rgba(255, 255, 255, .9); --gs: 22px; }
+
+.card {
+  --cw: 134px;
+  position: relative; flex: none; width: var(--cw); height: calc(var(--cw) * 1.42);
+  border-radius: 11px; color: var(--ink); font-family: var(--f-ui); text-align: center;
+  transition: transform .22s ease, filter .2s, opacity .2s;
+}
+.card.sm { --cw: 112px; }
+.card .c-frame {
+  position: absolute; inset: 0; border-radius: inherit; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; padding: 8px 8px 9px;
+  border: 1px solid var(--rc);
+  background: linear-gradient(165deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 42%, rgba(0, 0, 0, .55)), #050505;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6), inset 0 0 18px rgba(255, 255, 255, .04), 0 0 var(--gs) var(--rg);
+}
+.card .c-cost {
+  position: absolute; top: 6px; left: 6px; z-index: 2; width: 26px; height: 26px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: #f4f4f4; color: #000; font-family: var(--f-display); font-weight: 700; font-size: 14px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, .5);
+}
+.card .c-cost.short { background: #141414; color: #7a7a7a; border: 1px dashed #555; box-shadow: none; }
+.card .c-cost.free { outline: 2px solid #fff; outline-offset: 2px; }
+.card .c-cost.glitched { animation: costGlitch .5s steps(2) infinite; }
+@keyframes costGlitch { 0% { transform: translate(0, 0); clip-path: inset(0 0 0 0); } 50% { transform: translate(1px, -1px); clip-path: inset(10% 0 20% 0); } }
+.card .c-pips { position: absolute; top: 10px; right: 8px; display: flex; gap: 3px; }
+.card .c-pips i { width: 5px; height: 5px; transform: rotate(45deg); border: 1px solid rgba(255, 255, 255, .28); }
+.card .c-pips i.on { background: var(--rc); border-color: var(--rc); box-shadow: 0 0 5px var(--rg); }
+.card .c-art {
+  margin-top: calc(var(--cw) * .13); width: 64%; aspect-ratio: 1.3; flex: none;
+  display: grid; place-items: center; font-size: calc(var(--cw) * .3); color: #fff;
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 255, 255, .13), rgba(255, 255, 255, 0) 70%);
+  filter: drop-shadow(0 0 6px var(--rg));
+}
+.card .c-art .ic { stroke-width: 1.35; }
+.card.t-attack .c-art { clip-path: polygon(12% 0, 88% 0, 100% 50%, 88% 100%, 12% 100%, 0 50%); background-color: rgba(255, 255, 255, .03); }
+.card.t-skill .c-art { border-radius: 10px; border: 1px solid rgba(255, 255, 255, .07); }
+.card.t-power .c-art { border-radius: 50%; width: 50%; aspect-ratio: 1; border: 1px solid rgba(255, 255, 255, .12); }
+.card.t-status .c-art { opacity: .5; }
+.card .c-name {
+  margin-top: 6px; font-family: var(--f-display); font-weight: 700; font-size: calc(var(--cw) * .088);
+  letter-spacing: .03em; line-height: 1.15; max-width: 100%;
+}
+.card .c-lv { margin-left: 3px; text-shadow: 0 0 6px #fff; }
+.card .c-type { font-size: calc(var(--cw) * .06); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 2px 0 4px; white-space: nowrap; }
+.card .c-text {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: calc(var(--cw) * .078); line-height: 1.3; color: #d8d8d8; width: 100%; overflow: hidden;
+}
+.card .c-text.muted { color: var(--ink-3); }
+.card .c-rules, .card .c-tags { display: block; max-width: 100%; }
+.card .c-text .n { color: #fff; font-weight: 700; }
+.card .c-text .n.up { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(255, 255, 255, .6); }
+.card .c-text .n.buff { text-shadow: 0 0 8px #fff; }
+.card .c-text .n.nerf { color: #8a8a8a; }
+.card .c-text .kw { font-weight: 600; color: #fff; border-bottom: 1px dotted rgba(255, 255, 255, .55); cursor: help; }
+.card .c-tags { font-size: .9em; color: var(--ink-3); }
+.card .c-tags .kw { color: var(--ink-2); font-weight: 500; }
+
+.card.r-L .c-frame::after, .card.r-X .c-frame::after {
+  content: ''; position: absolute; inset: -40%; pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .16) 50%, transparent 58%);
+  animation: shimmer 3.4s linear infinite;
+}
+@keyframes shimmer { from { transform: translateX(-55%); } to { transform: translateX(55%); } }
+.card.r-E .c-frame { animation: epicGlow 3s ease-in-out infinite; }
+@keyframes epicGlow { 50% { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6), inset 0 0 22px rgba(255, 255, 255, .08), 0 0 20px rgba(255, 255, 255, .55); } }
+.card.t-status .c-frame { background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 3px), #080808; }
+
+.card .c-seal {
+  position: absolute; inset: 0; z-index: 4; border-radius: inherit; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; background: rgba(0, 0, 0, .74); backdrop-filter: blur(1.5px);
+  font-family: var(--f-display); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #cfcfcf; cursor: help;
+}
+.card .c-seal .ic { font-size: 30px; }
+.card .c-indeck {
+  position: absolute; top: -7px; right: -7px; z-index: 5; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; background: #fff; color: #000; font-size: 14px; box-shadow: 0 0 10px rgba(255, 255, 255, .7);
+}
+.card .c-indeck .ic { stroke-width: 2.4; }
+.card .c-badge {
+  position: absolute; left: 50%; bottom: -9px; z-index: 5; transform: translateX(-50%);
+  padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+  font-size: 10px; font-weight: 800; letter-spacing: .1em;
+  background: #fff; color: #000; box-shadow: 0 0 12px rgba(255, 255, 255, .55);
+}
+.card .c-badge.echo, .card .c-badge.refund, .card .c-badge.count { background: #0b0b0b; color: #fff; border: 1px solid var(--line-3); box-shadow: none; }
+.card .c-badge.ready { animation: glowPulse 1.4s infinite; }
+
+.card.locked .c-frame { border-style: dashed; border-color: #333; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .03) 0 6px, transparent 6px 12px), #040404; box-shadow: none; }
+.card.locked .c-art { opacity: .35; filter: none; }
+.card.locked .c-name { color: var(--ink-3); }
+
+.card-back .cb-inner {
+  position: absolute; inset: 0; border-radius: inherit; border: 1px solid var(--rc);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background:
+    repeating-linear-gradient(60deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 14px),
+    repeating-linear-gradient(-60deg, rgba(255, 255, 255, .04) 0 1px, transparent 1px 14px),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .13), #030303 70%);
+  box-shadow: 0 0 var(--gs) var(--rg), inset 0 0 20px rgba(255, 255, 255, .05);
+}
+.card-back .cb-inner > .ic, .card-back .cb-inner .ic-slot { font-size: calc(var(--cw) * .34); filter: drop-shadow(0 0 8px rgba(255, 255, 255, .7)); }
+.card-back .cb-inner span { font-family: var(--f-display); letter-spacing: .22em; font-size: calc(var(--cw) * .075); color: var(--ink-2); }
